@@ -238,7 +238,7 @@ int main()
 
         text_pipeline.draw(fps_text);
 
-        renderer.end_render_pass_present();
+        renderer.end_render_pass();
         renderer.end_frame(window);
 
         if (std::chrono::high_resolution_clock::time_point end_time = std::chrono::high_resolution_clock::now();

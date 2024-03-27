@@ -27,32 +27,17 @@ function(add_shaders TARGET)
     endforeach ()
 endfunction()
 
-
-find_package(Vulkan REQUIRED)
-
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
 set(FT_DISABLE_ZLIB ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_BZIP2 ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_PNG ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
 
-add_subdirectory(external/glfw-3.3.8)
 add_subdirectory(external/freetype-2.13.2)
-
-set(LIB_SOURCE_FILES
-        external/spirv-reflect-1.3.236/src/spirv_reflect.cpp)
+add_subdirectory(lib/mve)
 
 set(SOURCE_FILES
         src/main.cpp
-        src/mve/monitor.cpp
-        src/mve/renderer.cpp
-        src/mve/shader.cpp
-        src/mve/vertex_data.cpp
-        src/mve/window.cpp
         src/logger.cpp
         src/camera.cpp
         src/util/fixed_loop.cpp
@@ -62,16 +47,13 @@ set(SOURCE_FILES
 )
 
 set(LIBS
-        Vulkan::Vulkan
         glfw
-        freetype)
+        freetype
+        mve)
 
 set(LIB_INCLUDES
-        external/spdlog-1.11.0/include
-        external/vma-3.0.1/include
-        external/stb-8b5f1f3/include
+        external/spdlog-1.13.0/include
         external/tinyobjloader-45f683c/include
-        external/spirv-reflect-1.3.236/include
         external/thread-pool-3.3.0/include
         external/fast-noise-lite-1.1.1/include)
 
@@ -81,9 +63,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_link_libraries(${PROJECT_NAME} -static-libgcc -static-libstdc++)
 endif ()
 
-target_sources(${PROJECT_NAME} PRIVATE
-        ${LIB_SOURCE_FILES}
-        ${SOURCE_FILES})
+target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES})
 
 target_link_libraries(${PROJECT_NAME} ${LIBS})
 
