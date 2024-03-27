@@ -72,12 +72,11 @@ TextPipeline::TextPipeline(mve::Renderer& renderer, const int point_size)
                 mve::TextureFormat::r,
                 font_face->glyph->bitmap.width,
                 font_face->glyph->bitmap.rows,
-                1,
                 reinterpret_cast<const std::byte*>(font_face->glyph->bitmap.buffer));
         }
         else {
             std::byte val {};
-            texture = renderer.create_texture(mve::TextureFormat::r, 1, 1, 1, &val);
+            texture = renderer.create_texture(mve::TextureFormat::r, 1, 1, &val);
         }
         FontChar font_char
             = { .texture = std::move(texture),
@@ -91,7 +90,7 @@ TextPipeline::TextPipeline(mve::Renderer& renderer, const int point_size)
     FT_Done_FreeType(font_lib);
 
     constexpr std::byte cursor_texture_data { 255 };
-    m_cursor_texture = renderer.create_texture(mve::TextureFormat::r, 1, 1, 1, &cursor_texture_data);
+    m_cursor_texture = renderer.create_texture(mve::TextureFormat::r, 1, 1, &cursor_texture_data);
 }
 
 void TextPipeline::resize()
