@@ -62,6 +62,7 @@ void main() {
     float near = 0.0;
     float far = 0.0;
     compute_near_far(ray, near, far);
+    near = max(near, 0.0);
 
     ray.origin = ray.origin + near * ray.dir;
 
@@ -88,7 +89,7 @@ void main() {
         ray.origin += ray.dir;
         dist += delta;
         if (dist >= far) { break; }
-        if (acc.a > 0.95) { break;}
+        // if (acc.a > 0.95) { break;}
     }
 
     out_color = acc;

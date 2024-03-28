@@ -14,6 +14,8 @@ namespace mve {
 
 using Handle = uint64_t;
 
+enum class CullMode { none, front, back, front_back };
+
 class Renderer;
 class ShaderDescriptorSet;
 class ShaderDescriptorBinding;
@@ -110,7 +112,9 @@ public:
         Renderer& renderer,
         const Shader& vertex_shader,
         const Shader& fragment_shader,
-        const VertexLayout& vertex_layout);
+        const VertexLayout& vertex_layout,
+        const CullMode cull_mode,
+        bool depth_test);
 
     inline GraphicsPipeline(Renderer& renderer, Handle handle);
 
@@ -401,6 +405,7 @@ struct GraphicsPipelineImpl {
     Shader vertex_shader;
     Shader fragment_shader;
     VertexLayout vertex_layout;
+    vk::CullModeFlags cull_mode;
     bool depth_test;
 };
 

@@ -308,6 +308,7 @@ void Renderer::recreate_graphics_pipelines()
                 m_vk_render_pass,
                 pipeline->vertex_layout,
                 m_msaa_samples,
+                pipeline->cull_mode,
                 pipeline->depth_test);
         }
     }
@@ -1105,9 +1106,26 @@ GraphicsPipeline Renderer::create_graphics_pipeline(
     const Shader& vertex_shader,
     const Shader& fragment_shader,
     const VertexLayout& vertex_layout,
+    CullMode cull_mode,
     const bool depth_test)
 {
     const Handle layout = create_graphics_pipeline_layout(m_vk_loader, vertex_shader, fragment_shader);
+
+    vk::CullModeFlags vk_cull;
+    switch (cull_mode) {
+    case CullMode::none:
+        vk_cull = vk::CullModeFlagBits::eNone;
+        break;
+    case CullMode::front:
+        vk_cull = vk::CullModeFlagBits::eFront;
+        break;
+    case CullMode::back:
+        vk_cull = vk::CullModeFlagBits::eBack;
+        break;
+    case CullMode::front_back:
+        vk_cull = vk::CullModeFlagBits::eFrontAndBack;
+        break;
+    }
 
     const vk::Pipeline vk_pipeline = create_vk_graphics_pipeline(
         m_vk_loader,
@@ -1118,6 +1136,7 @@ GraphicsPipeline Renderer::create_graphics_pipeline(
         m_vk_render_pass,
         vertex_layout,
         m_msaa_samples,
+        vk_cull,
         depth_test);
 
     std::optional<Handle> id;
@@ -1138,6 +1157,7 @@ GraphicsPipeline Renderer::create_graphics_pipeline(
         .vertex_shader = vertex_shader,
         .fragment_shader = fragment_shader,
         .vertex_layout = vertex_layout,
+        .cull_mode = vk_cull,
         .depth_test = depth_test
     };
 

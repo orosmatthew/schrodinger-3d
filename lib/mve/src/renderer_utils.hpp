@@ -974,6 +974,7 @@ inline vk::Pipeline create_vk_graphics_pipeline(
     vk::RenderPass render_pass,
     const VertexLayout& vertex_layout,
     vk::SampleCountFlagBits samples,
+    vk::CullModeFlags cull_mode,
     bool depth_test)
 {
     std::vector<uint32_t> vertex_spv_code = vertex_shader.spv_code();
@@ -1041,7 +1042,7 @@ inline vk::Pipeline create_vk_graphics_pipeline(
               .setRasterizerDiscardEnable(false)
               .setPolygonMode(vk::PolygonMode::eFill)
               .setLineWidth(1.0f)
-              .setCullMode(vk::CullModeFlagBits::eBack)
+              .setCullMode(cull_mode)
               .setFrontFace(vk::FrontFace::eCounterClockwise)
               .setDepthBiasEnable(false)
               .setDepthBiasConstantFactor(0.0f)

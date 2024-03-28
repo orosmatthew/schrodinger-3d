@@ -85,6 +85,7 @@ public:
         const Shader& vertex_shader,
         const Shader& fragment_shader,
         const VertexLayout& vertex_layout,
+        CullMode cull_mode,
         bool depth_test = true);
 
     void destroy(VertexBuffer& vertex_buffer);

@@ -5,9 +5,15 @@
 namespace mve {
 
 inline GraphicsPipeline::GraphicsPipeline(
-    Renderer& renderer, const Shader& vertex_shader, const Shader& fragment_shader, const VertexLayout& vertex_layout)
+    Renderer& renderer,
+    const Shader& vertex_shader,
+    const Shader& fragment_shader,
+    const VertexLayout& vertex_layout,
+    const CullMode cull_mode,
+    const bool depth_test)
 {
-    *this = std::move(renderer.create_graphics_pipeline(vertex_shader, fragment_shader, vertex_layout));
+    *this = std::move(
+        renderer.create_graphics_pipeline(vertex_shader, fragment_shader, vertex_layout, cull_mode, depth_test));
 }
 
 inline GraphicsPipeline& GraphicsPipeline::operator=(GraphicsPipeline&& other) noexcept

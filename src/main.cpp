@@ -116,7 +116,8 @@ int main()
 
     mve::Shader vert_shader("../res/bin/shader/cloud.vert.spv");
     mve::Shader frag_shader("../res/bin/shader/cloud.frag.spv");
-    mve::GraphicsPipeline pipeline = renderer.create_graphics_pipeline(vert_shader, frag_shader, vertex_layout, true);
+    mve::GraphicsPipeline pipeline
+        = renderer.create_graphics_pipeline(vert_shader, frag_shader, vertex_layout, mve::CullMode::none, true);
 
     mve::DescriptorSet global_descriptor = pipeline.create_descriptor_set(vert_shader.descriptor_set(0));
     mve::UniformBuffer global_ubo = renderer.create_uniform_buffer(vert_shader.descriptor_set(0).binding(0));
