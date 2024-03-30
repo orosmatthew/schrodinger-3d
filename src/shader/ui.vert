@@ -6,7 +6,7 @@ layout (set = 0, binding = 0) uniform GlobalUniform {
     vec2 world_size;
 } global_ubo;
 
-layout (set = 1, binding = 0) uniform ObjectUnifom {
+layout (set = 1, binding = 0) uniform ObjectUniform {
     mat4 model;
     vec2 scale;
     float contrast;

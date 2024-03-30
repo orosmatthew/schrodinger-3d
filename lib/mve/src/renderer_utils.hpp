@@ -204,7 +204,8 @@ inline vk::Format find_depth_format(const vk::DispatchLoaderDynamic& loader, con
 }
 
 inline Image create_image(
-    const VmaAllocator allocator,
+    // ReSharper disable once CppParameterMayBeConst
+    VmaAllocator allocator,
     const uint32_t width,
     const uint32_t height,
     const uint32_t depth,
@@ -325,7 +326,8 @@ inline void end_single_submit(
 inline RenderImage create_color_image(
     const vk::DispatchLoaderDynamic& loader,
     const vk::Device device,
-    const VmaAllocator allocator,
+    // ReSharper disable once CppParameterMayBeConst
+    VmaAllocator allocator,
     const vk::Extent2D swapchain_extent,
     const vk::Format swapchain_format,
     const vk::SampleCountFlagBits samples)
@@ -1374,7 +1376,8 @@ inline std::vector<vk::CommandBuffer> create_vk_command_buffers(
 }
 
 inline Buffer create_buffer(
-    const VmaAllocator allocator,
+    // ReSharper disable once CppParameterMayBeConst
+    VmaAllocator allocator,
     const size_t size,
     const VkBufferUsageFlags usage,
     const VmaMemoryUsage memory_usage,

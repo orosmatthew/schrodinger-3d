@@ -5,7 +5,7 @@ layout (set = 0, binding = 0) uniform GlobalUniform {
     mat4 proj;
 } global_ubo;
 
-layout (set = 1, binding = 0) uniform ObjectUnifom {
+layout (set = 1, binding = 0) uniform ObjectUniform {
     mat4 model;
 } object_ubo;
 

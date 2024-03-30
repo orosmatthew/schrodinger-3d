@@ -113,7 +113,7 @@ public:
         const Shader& vertex_shader,
         const Shader& fragment_shader,
         const VertexLayout& vertex_layout,
-        const CullMode cull_mode,
+        CullMode cull_mode,
         bool depth_test);
 
     inline GraphicsPipeline(Renderer& renderer, Handle handle);

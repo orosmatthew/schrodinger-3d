@@ -1106,7 +1106,7 @@ GraphicsPipeline Renderer::create_graphics_pipeline(
     const Shader& vertex_shader,
     const Shader& fragment_shader,
     const VertexLayout& vertex_layout,
-    CullMode cull_mode,
+    const CullMode cull_mode,
     const bool depth_test)
 {
     const Handle layout = create_graphics_pipeline_layout(m_vk_loader, vertex_shader, fragment_shader);
@@ -1322,7 +1322,8 @@ void Renderer::destroy(Texture& texture)
 }
 
 // TODO: mip-mapping
-Texture Renderer::create_texture(const TextureFormat format, uint32_t width, uint32_t height, const std::byte* data)
+Texture Renderer::create_texture(
+    const TextureFormat format, const uint32_t width, const uint32_t height, const std::byte* data)
 {
     MVE_VAL_ASSERT(width != 0 && height != 0, "[Renderer] Attempt to create texture with 0 width or height")
     constexpr uint32_t mip_levels = 1;
@@ -1399,7 +1400,11 @@ Texture Renderer::create_texture(const TextureFormat format, uint32_t width, uin
 }
 
 Texture Renderer::create_texture(
-    TextureFormat format, uint32_t width, uint32_t height, uint32_t depth, const std::byte* data)
+    const TextureFormat format,
+    const uint32_t width,
+    const uint32_t height,
+    const uint32_t depth,
+    const std::byte* data)
 {
     MVE_VAL_ASSERT(width != 0 && height != 0, "[Renderer] Attempt to create texture with 0 width or height")
     constexpr uint32_t mip_levels = 1;
