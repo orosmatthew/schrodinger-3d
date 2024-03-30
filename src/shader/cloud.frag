@@ -1,6 +1,6 @@
 #version 460
 
-#define STEPS 200
+#define STEPS 100
 
 struct Ray {
     vec3 origin;
@@ -12,6 +12,8 @@ layout (set = 0, binding = 1) uniform sampler3D volume;
 layout (location = 0) in Ray frag_vray;
 
 layout (location = 0) out vec4 out_color;
+
+vec3 lightDir = normalize(vec3(-1.0, -1.0, -1.0));
 
 void compute_near_far(Ray ray, inout float near, inout float far) {
     // Ray is assumed to be in local coordinates, ie:
@@ -58,15 +60,21 @@ void main() {
 
     for (int i = 0; i < STEPS; ++i) {
         float s = texture(volume, ray.origin).r;
-        /*
-        if (s > 0.0) {
-            acc.rgb =  base_color;
-            acc.a = 1.0; //* 0.5;
-            break;
-        }
-        */
-        acc.rgb += (1.0 - acc.a) * s * base_color;
-        acc.a += (1.0 - acc.a) * s; //* 0.5;
+
+        // Calculate the gradient (normal) of the smoke
+        vec3 gradient = vec3(
+            texture(volume, ray.origin + vec3(0.01, 0, 0)).r - texture(volume, ray.origin - vec3(0.01, 0, 0)).r,
+            texture(volume, ray.origin + vec3(0, 0.01, 0)).r - texture(volume, ray.origin - vec3(0, 0.01, 0)).r,
+            texture(volume, ray.origin + vec3(0, 0, 0.01)).r - texture(volume, ray.origin - vec3(0, 0, 0.01)).r
+        );
+        gradient = normalize(gradient);
+
+        // Calculate the lighting as the dot product of the gradient and the light direction
+        float lighting = max(0.2, dot(gradient, lightDir));
+
+        acc.rgb += (1.0 - acc.a) * s * base_color * lighting;
+        acc.a += (1.0 - acc.a) * s;
+
         ray.origin += ray.dir;
         dist += delta;
         if (dist >= far) { break; }

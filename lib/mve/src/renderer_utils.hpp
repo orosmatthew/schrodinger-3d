@@ -815,14 +815,14 @@ inline vk::SurfaceFormatKHR choose_vk_swapchain_surface_format(
 inline vk::PresentModeKHR choose_vk_swapchain_present_mode(
     const std::vector<vk::PresentModeKHR>& available_present_modes)
 {
-    if (const auto it = std::ranges::find_if(
-            available_present_modes,
-            [](const vk::PresentModeKHR& available_present_mode) {
-                return available_present_mode == vk::PresentModeKHR::eMailbox;
-            });
-        it != available_present_modes.end()) {
-        return *it;
-    }
+    // if (const auto it = std::ranges::find_if(
+    //         available_present_modes,
+    //         [](const vk::PresentModeKHR& available_present_mode) {
+    //             return available_present_mode == vk::PresentModeKHR::eMailbox;
+    //         });
+    //     it != available_present_modes.end()) {
+    //     return *it;
+    // }
     return vk::PresentModeKHR::eFifo;
 }
 

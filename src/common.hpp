@@ -1,11 +1,13 @@
 #pragma once
 
-#include "mve/math/math.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <utility>
 #include <vector>
+
+#include "mve/math/math.hpp"
 
 namespace mve {
 template <class Archive>
@@ -212,7 +214,7 @@ inline void transform_vertices(std::vector<mve::Vector3>& vertices, const mve::M
     });
 }
 
-inline void for_2d(const mve::Vector2i from, const mve::Vector2i to, std::function<void(mve::Vector2i)> func)
+inline void for_2d(const mve::Vector2i from, const mve::Vector2i to, const std::function<void(mve::Vector2i)>& func)
 {
     for (int x = from.x; x < to.x; x++) {
         for (int y = from.y; y < to.y; y++) {
@@ -221,7 +223,7 @@ inline void for_2d(const mve::Vector2i from, const mve::Vector2i to, std::functi
     }
 }
 
-inline void for_3d(const mve::Vector3i from, const mve::Vector3i to, std::function<void(mve::Vector3i)> func)
+inline void for_3d(const mve::Vector3i from, const mve::Vector3i to, const std::function<void(mve::Vector3i)>& func)
 {
     for (int x = from.x; x < to.x; x++) {
         for (int y = from.y; y < to.y; y++) {
