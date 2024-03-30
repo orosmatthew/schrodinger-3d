@@ -1405,7 +1405,7 @@ Texture Renderer::create_texture(
     constexpr uint32_t mip_levels = 1;
 
     vk::Format vk_format {};
-    size_t size = width * height * sizeof(std::byte);
+    size_t size = width * height * depth * sizeof(std::byte);
     switch (format) {
     case TextureFormat::r:
         vk_format = vk::Format::eR8Unorm;

@@ -182,6 +182,15 @@ int main()
     while (!window.should_close()) {
         window.poll_events();
 
+        if (window.is_key_down(mve::Key::left_alt) && window.is_key_pressed(mve::Key::enter)) {
+            if (window.is_fullscreen()) {
+                window.windowed();
+            }
+            else {
+                window.fullscreen(true);
+            }
+        }
+
         if (window.is_key_pressed(mve::Key::c)) {
             if (cursor_captured) {
                 window.enable_cursor();
