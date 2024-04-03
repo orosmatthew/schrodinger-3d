@@ -202,7 +202,10 @@ int main()
     int current_frame_count = 0;
     int frame_count;
     auto begin_time = std::chrono::steady_clock::time_point();
-    while (!window.should_close() && !g_global_data.should_exit) {
+    while (!g_global_data.should_exit) {
+        if (window.should_close()) {
+            g_global_data.should_exit = true;
+        }
         window.poll_events();
 
         if (window.is_key_down(mve::Key::left_alt) && window.is_key_pressed(mve::Key::enter)) {

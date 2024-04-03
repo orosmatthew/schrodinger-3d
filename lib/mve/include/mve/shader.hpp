@@ -10,6 +10,7 @@ namespace mve {
 enum class ShaderType {
     vertex,
     fragment,
+    compute,
 };
 
 enum class ShaderDescriptorType {

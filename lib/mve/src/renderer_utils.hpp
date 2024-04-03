@@ -630,8 +630,9 @@ inline QueueFamilyIndices get_vk_queue_family_indices(
     const std::vector<vk::QueueFamilyProperties> queue_families = physical_device.getQueueFamilyProperties(loader);
     int i = 0;
     for (const vk::QueueFamilyProperties& queue_family : queue_families) {
-        if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics) {
-            indices.graphics_family = i;
+        if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics
+            && queue_family.queueFlags & vk::QueueFlagBits::eCompute) {
+            indices.graphics_compute_family = i;
         }
 
         const vk::ResultValue<unsigned int> surface_support_result
@@ -739,7 +740,7 @@ inline vk::Device create_vk_logical_device(
     assert(queue_family_indices.is_complete());
 
     std::set _queue_families
-        = { queue_family_indices.graphics_family.value(), queue_family_indices.present_family.value() };
+        = { queue_family_indices.graphics_compute_family.value(), queue_family_indices.present_family.value() };
 
     float queue_priority = 1.0f;
 
@@ -880,9 +881,9 @@ inline vk::SwapchainKHR create_vk_swapchain(
               .setClipped(true)
               .setOldSwapchain(nullptr);
 
-    if (queue_family_indices.graphics_family != queue_family_indices.present_family) {
+    if (queue_family_indices.graphics_compute_family != queue_family_indices.present_family) {
         const uint32_t indices_arr[]
-            = { queue_family_indices.graphics_family.value(), queue_family_indices.present_family.value() };
+            = { queue_family_indices.graphics_compute_family.value(), queue_family_indices.present_family.value() };
         swapchain_create_info.setImageSharingMode(vk::SharingMode::eConcurrent)
             .setQueueFamilyIndexCount(2)
             .setPQueueFamilyIndices(indices_arr);
@@ -1523,7 +1524,7 @@ inline vk::CommandPool create_vk_command_pool(
     const auto command_pool_info
         = vk::CommandPoolCreateInfo()
               .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-              .setQueueFamilyIndex(queue_family_indices.graphics_family.value());
+              .setQueueFamilyIndex(queue_family_indices.graphics_compute_family.value());
 
     const vk::ResultValue<vk::CommandPool> command_pool_result
         = device.createCommandPool(command_pool_info, nullptr, loader);

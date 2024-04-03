@@ -14,6 +14,8 @@ namespace mve {
 
 using Handle = uint64_t;
 
+enum class TextureFormat { r, rg, rgb, rgba };
+enum class Msaa { samples_1, samples_2, samples_4, samples_8, samples_16, samples_32, samples_64 };
 enum class CullMode { none, front, back, front_back };
 enum class DepthTest { off, on };
 enum class PersistUniformAcrossFrames { off, on };
@@ -27,6 +29,7 @@ class UniformLocation;
 class DescriptorSet;
 class Framebuffer;
 class GraphicsPipeline;
+class ComputePipeline;
 class IndexBuffer;
 class Monitor;
 class Texture;
@@ -135,6 +138,41 @@ public:
     [[nodiscard]] inline bool operator==(const GraphicsPipeline& other) const;
 
     [[nodiscard]] inline bool operator<(const GraphicsPipeline& other) const;
+
+    [[nodiscard]] inline Handle handle() const;
+
+    [[nodiscard]] inline bool is_valid() const;
+
+    inline void invalidate();
+
+    [[nodiscard]] inline DescriptorSet create_descriptor_set(const ShaderDescriptorSet& descriptor_set) const;
+
+private:
+    Renderer* m_renderer {};
+    Handle m_handle {};
+};
+
+class ComputePipeline {
+public:
+    explicit inline ComputePipeline(Renderer& renderer);
+
+    inline ComputePipeline(Renderer& renderer, Handle handle);
+
+    ComputePipeline(const GraphicsPipeline&) = delete;
+
+    inline ComputePipeline(ComputePipeline&& other) noexcept;
+
+    inline ~ComputePipeline();
+
+    inline void destroy();
+
+    ComputePipeline& operator=(const ComputePipeline&) = delete;
+
+    inline ComputePipeline& operator=(ComputePipeline&& other) noexcept;
+
+    [[nodiscard]] inline bool operator==(const ComputePipeline& other) const;
+
+    [[nodiscard]] inline bool operator<(const ComputePipeline& other) const;
 
     [[nodiscard]] inline Handle handle() const;
 
@@ -347,12 +385,12 @@ struct TextureImpl {
 };
 
 struct QueueFamilyIndices {
-    std::optional<uint32_t> graphics_family;
+    std::optional<uint32_t> graphics_compute_family;
     std::optional<uint32_t> present_family;
 
     [[nodiscard]] bool is_complete() const
     {
-        return graphics_family.has_value() && present_family.has_value();
+        return graphics_compute_family.has_value() && present_family.has_value();
     }
 };
 
@@ -420,6 +458,8 @@ struct GraphicsPipelineImpl {
     vk::CullModeFlags cull_mode;
     DepthTest depth_test;
 };
+
+struct ComputePipelineImpl { };
 
 struct FramebufferImpl {
     std::vector<vk::Framebuffer> vk_framebuffers;

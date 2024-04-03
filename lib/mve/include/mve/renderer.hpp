@@ -21,9 +21,6 @@ namespace mve {
 class Window;
 class ShaderDescriptorSet;
 
-enum class TextureFormat { r, rg, rgb, rgba };
-enum class Msaa { samples_1, samples_2, samples_4, samples_8, samples_16, samples_32, samples_64 };
-
 class Renderer {
 public:
     Renderer(
@@ -87,11 +84,15 @@ public:
         CullMode cull_mode,
         DepthTest depth_test);
 
+    ComputePipeline create_compute_pipeline();
+
     void destroy(VertexBuffer& vertex_buffer);
 
     void destroy(IndexBuffer& index_buffer);
 
     void destroy(GraphicsPipeline& graphics_pipeline);
+
+    void destroy(ComputePipeline& compute_pipeline);
 
     void destroy(DescriptorSet& descriptor_set);
 
@@ -188,7 +189,7 @@ private:
     vk::SurfaceKHR m_vk_surface;
     vk::PhysicalDevice m_vk_physical_device;
     vk::Device m_vk_device;
-    vk::Queue m_vk_graphics_queue;
+    vk::Queue m_vk_graphics_compute_queue;
     vk::Queue m_vk_present_queue;
     vk::SurfaceFormatKHR m_vk_swapchain_image_format;
     vk::Extent2D m_vk_swapchain_extent;
@@ -213,6 +214,7 @@ private:
     std::vector<std::optional<detail::IndexBufferImpl>> m_index_buffers;
     std::unordered_map<Handle, vk::DescriptorSetLayout> m_descriptor_set_layouts;
     std::vector<std::optional<detail::GraphicsPipelineImpl>> m_graphics_pipelines {};
+    std::vector<std::optional<detail::ComputePipelineImpl>> m_compute_pipelines {};
     std::vector<std::optional<detail::GraphicsPipelineLayoutImpl>> m_graphics_pipeline_layouts {};
     std::vector<std::optional<detail::FramebufferImpl>> m_framebuffers {};
     std::unordered_map<uint64_t, detail::TextureImpl> m_textures {};

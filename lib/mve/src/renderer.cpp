@@ -71,7 +71,8 @@ Renderer::Renderer(
     m_vk_swapchain_image_views = create_vk_swapchain_image_views(
         m_vk_loader, m_vk_device, m_vk_swapchain_images, m_vk_swapchain_image_format.format);
 
-    m_vk_graphics_queue = m_vk_device.getQueue(m_queue_family_indices.graphics_family.value(), 0, m_vk_loader);
+    m_vk_graphics_compute_queue
+        = m_vk_device.getQueue(m_queue_family_indices.graphics_compute_family.value(), 0, m_vk_loader);
     m_vk_present_queue = m_vk_device.getQueue(m_queue_family_indices.present_family.value(), 0, m_vk_loader);
 
     VmaAllocatorCreateInfo allocatorCreateInfo = {};
@@ -830,7 +831,7 @@ void Renderer::end_frame(const Window& window)
               .setSignalSemaphores(signal_semaphores);
 
     const vk::Result graphics_submit_result
-        = m_vk_graphics_queue.submit({ submit_info }, frame.in_flight_fence, m_vk_loader);
+        = m_vk_graphics_compute_queue.submit({ submit_info }, frame.in_flight_fence, m_vk_loader);
     MVE_ASSERT(graphics_submit_result == vk::Result::eSuccess, "[Renderer] Failed to submit to graphics queue")
 
     vk::SwapchainKHR swapchains[] = { m_vk_swapchain };
@@ -1164,6 +1165,11 @@ GraphicsPipeline Renderer::create_graphics_pipeline(
     log().debug("[Renderer] Graphics pipeline created with ID: {}", *id);
 
     return { *this, *id };
+}
+
+ComputePipeline Renderer::create_compute_pipeline()
+{
+    // TODO
 }
 
 DescriptorSet Renderer::create_descriptor_set(
@@ -1569,6 +1575,11 @@ void Renderer::destroy(GraphicsPipeline& graphics_pipeline)
     const Handle handle = graphics_pipeline.handle();
     graphics_pipeline.invalidate();
     m_deferred_operations.emplace_back(DeferredDestroyGraphicsPipeline { handle });
+}
+
+void Renderer::destroy(ComputePipeline& compute_pipeline)
+{
+    // TODO
 }
 
 void Renderer::destroy(UniformBuffer& uniform_buffer)
