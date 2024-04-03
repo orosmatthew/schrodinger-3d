@@ -15,6 +15,8 @@ namespace mve {
 using Handle = uint64_t;
 
 enum class CullMode { none, front, back, front_back };
+enum class DepthTest { off, on };
+enum class PersistUniformAcrossFrames { off, on };
 
 class Renderer;
 class ShaderDescriptorSet;
@@ -114,7 +116,7 @@ public:
         const Shader& fragment_shader,
         const VertexLayout& vertex_layout,
         CullMode cull_mode,
-        bool depth_test);
+        DepthTest depth_test);
 
     inline GraphicsPipeline(Renderer& renderer, Handle handle);
 
@@ -249,17 +251,27 @@ public:
 
     inline void invalidate();
 
-    inline void update(UniformLocation location, float value, bool persist = true);
+    inline void update(
+        UniformLocation location, float value, PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
-    inline void update(UniformLocation location, Vector2 value, bool persist = true);
+    inline void update(
+        UniformLocation location, Vector2 value, PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
-    inline void update(UniformLocation location, Vector3 value, bool persist = true);
+    inline void update(
+        UniformLocation location, Vector3 value, PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
-    inline void update(UniformLocation location, Vector4 value, bool persist = true);
+    inline void update(
+        UniformLocation location, Vector4 value, PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
-    inline void update(UniformLocation location, const Matrix3& value, bool persist = true);
+    inline void update(
+        UniformLocation location,
+        const Matrix3& value,
+        PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
-    inline void update(UniformLocation location, const Matrix4& value, bool persist = true);
+    inline void update(
+        UniformLocation location,
+        const Matrix4& value,
+        PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
 private:
     Renderer* m_renderer {};
@@ -406,7 +418,7 @@ struct GraphicsPipelineImpl {
     Shader fragment_shader;
     VertexLayout vertex_layout;
     vk::CullModeFlags cull_mode;
-    bool depth_test;
+    DepthTest depth_test;
 };
 
 struct FramebufferImpl {

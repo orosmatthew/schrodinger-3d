@@ -1107,7 +1107,7 @@ GraphicsPipeline Renderer::create_graphics_pipeline(
     const Shader& fragment_shader,
     const VertexLayout& vertex_layout,
     const CullMode cull_mode,
-    const bool depth_test)
+    const DepthTest depth_test)
 {
     const Handle layout = create_graphics_pipeline_layout(m_vk_loader, vertex_shader, fragment_shader);
 
@@ -1282,32 +1282,50 @@ UniformBuffer Renderer::create_uniform_buffer(const ShaderDescriptorBinding& des
 }
 
 void Renderer::update_uniform(
-    UniformBuffer& uniform_buffer, const UniformLocation location, const float value, const bool persist)
+    UniformBuffer& uniform_buffer,
+    const UniformLocation location,
+    const float value,
+    const PersistUniformAcrossFrames persist)
 {
     update_uniform<float>(uniform_buffer, location, value, persist);
 }
 void Renderer::update_uniform(
-    UniformBuffer& uniform_buffer, const UniformLocation location, const Vector2 value, const bool persist)
+    UniformBuffer& uniform_buffer,
+    const UniformLocation location,
+    const Vector2 value,
+    const PersistUniformAcrossFrames persist)
 {
     update_uniform<Vector2>(uniform_buffer, location, value, persist);
 }
 void Renderer::update_uniform(
-    UniformBuffer& uniform_buffer, const UniformLocation location, const Vector3 value, const bool persist)
+    UniformBuffer& uniform_buffer,
+    const UniformLocation location,
+    const Vector3 value,
+    const PersistUniformAcrossFrames persist)
 {
     update_uniform<Vector3>(uniform_buffer, location, value, persist);
 }
 void Renderer::update_uniform(
-    UniformBuffer& uniform_buffer, const UniformLocation location, const Vector4 value, const bool persist)
+    UniformBuffer& uniform_buffer,
+    const UniformLocation location,
+    const Vector4 value,
+    const PersistUniformAcrossFrames persist)
 {
     update_uniform<Vector4>(uniform_buffer, location, value, persist);
 }
 void Renderer::update_uniform(
-    UniformBuffer& uniform_buffer, const UniformLocation location, const Matrix3& value, const bool persist)
+    UniformBuffer& uniform_buffer,
+    const UniformLocation location,
+    const Matrix3& value,
+    const PersistUniformAcrossFrames persist)
 {
     update_uniform<Matrix3>(uniform_buffer, location, value, persist);
 }
 void Renderer::update_uniform(
-    UniformBuffer& uniform_buffer, const UniformLocation location, const Matrix4& value, const bool persist)
+    UniformBuffer& uniform_buffer,
+    const UniformLocation location,
+    const Matrix4& value,
+    const PersistUniformAcrossFrames persist)
 {
     update_uniform<Matrix4>(uniform_buffer, location, value, persist);
 }
@@ -1322,48 +1340,47 @@ void Renderer::destroy(Texture& texture)
 }
 
 // TODO: mip-mapping
-Texture Renderer::create_texture(
-    const TextureFormat format, const uint32_t width, const uint32_t height, const std::byte* data)
+Texture Renderer::create_texture(const TextureFormat format, const Vector2i size, const std::byte* data)
 {
-    MVE_VAL_ASSERT(width != 0 && height != 0, "[Renderer] Attempt to create texture with 0 width or height")
+    MVE_VAL_ASSERT(size.x != 0 && size.y != 0, "[Renderer] Attempt to create texture with 0 width or height")
     constexpr uint32_t mip_levels = 1;
 
     vk::Format vk_format {};
-    size_t size = width * height * sizeof(std::byte);
+    size_t byte_size = size.x * size.y * sizeof(std::byte);
     switch (format) {
     case TextureFormat::r:
         vk_format = vk::Format::eR8Unorm;
         break;
     case TextureFormat::rg:
         vk_format = vk::Format::eR8G8Unorm;
-        size *= 2;
+        byte_size *= 2;
         break;
     case TextureFormat::rgb:
         vk_format = vk::Format::eR8G8B8Unorm;
-        size *= 3;
+        byte_size *= 3;
         break;
     case TextureFormat::rgba:
         vk_format = vk::Format::eR8G8B8A8Unorm;
-        size *= 4;
+        byte_size *= 4;
         break;
     }
 
     const Buffer staging_buffer = create_buffer(
         m_vma_allocator,
-        size,
+        byte_size,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VMA_MEMORY_USAGE_AUTO,
         VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
     void* data_ptr;
     vmaMapMemory(m_vma_allocator, staging_buffer.vma_allocation, &data_ptr);
-    memcpy(data_ptr, data, size);
+    memcpy(data_ptr, data, byte_size);
     vmaUnmapMemory(m_vma_allocator, staging_buffer.vma_allocation);
 
     const Image image = create_image(
         m_vma_allocator,
-        width,
-        height,
+        size.x,
+        size.y,
         1,
         mip_levels,
         vk::SampleCountFlagBits::e1,
@@ -1399,53 +1416,49 @@ Texture Renderer::create_texture(
     return { *this, handle };
 }
 
-Texture Renderer::create_texture(
-    const TextureFormat format,
-    const uint32_t width,
-    const uint32_t height,
-    const uint32_t depth,
-    const std::byte* data)
+Texture Renderer::create_texture(const TextureFormat format, const Vector3i size, const std::byte* data)
 {
-    MVE_VAL_ASSERT(width != 0 && height != 0, "[Renderer] Attempt to create texture with 0 width or height")
+    MVE_VAL_ASSERT(
+        size.x != 0 && size.y != 0 && size.z != 0, "[Renderer] Attempt to create texture with 0 width or height")
     constexpr uint32_t mip_levels = 1;
 
     vk::Format vk_format {};
-    size_t size = width * height * depth * sizeof(std::byte);
+    size_t byte_size = size.x * size.y * size.z * sizeof(std::byte);
     switch (format) {
     case TextureFormat::r:
         vk_format = vk::Format::eR8Unorm;
         break;
     case TextureFormat::rg:
         vk_format = vk::Format::eR8G8Unorm;
-        size *= 2;
+        byte_size *= 2;
         break;
     case TextureFormat::rgb:
         vk_format = vk::Format::eR8G8B8Unorm;
-        size *= 3;
+        byte_size *= 3;
         break;
     case TextureFormat::rgba:
         vk_format = vk::Format::eR8G8B8A8Unorm;
-        size *= 4;
+        byte_size *= 4;
         break;
     }
 
     const Buffer staging_buffer = create_buffer(
         m_vma_allocator,
-        size,
+        byte_size,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VMA_MEMORY_USAGE_AUTO,
         VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
     void* data_ptr;
     vmaMapMemory(m_vma_allocator, staging_buffer.vma_allocation, &data_ptr);
-    memcpy(data_ptr, data, size);
+    memcpy(data_ptr, data, byte_size);
     vmaUnmapMemory(m_vma_allocator, staging_buffer.vma_allocation);
 
     const Image image = create_image(
         m_vma_allocator,
-        width,
-        height,
-        depth,
+        size.x,
+        size.y,
+        size.z,
         mip_levels,
         vk::SampleCountFlagBits::e1,
         vk_format,
@@ -1514,11 +1527,7 @@ Texture Renderer::create_texture(const std::filesystem::path& path)
     // vk::DeviceSize size = width * height * 4;
     MVE_ASSERT(pixels != nullptr, "[Renderer] Failed to load texture image")
 
-    return create_texture(
-        TextureFormat::rgba,
-        static_cast<uint32_t>(width),
-        static_cast<uint32_t>(height),
-        reinterpret_cast<const std::byte*>(pixels));
+    return create_texture(TextureFormat::rgba, { width, height }, reinterpret_cast<const std::byte*>(pixels));
 }
 
 Texture Renderer::create_texture(

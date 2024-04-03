@@ -977,7 +977,7 @@ inline vk::Pipeline create_vk_graphics_pipeline(
     const VertexLayout& vertex_layout,
     vk::SampleCountFlagBits samples,
     vk::CullModeFlags cull_mode,
-    bool depth_test)
+    DepthTest depth_test)
 {
     std::vector<uint32_t> vertex_spv_code = vertex_shader.spv_code();
     auto vertex_shader_create_info
@@ -1062,7 +1062,7 @@ inline vk::Pipeline create_vk_graphics_pipeline(
 
     auto depth_stencil
         = vk::PipelineDepthStencilStateCreateInfo()
-              .setDepthTestEnable(depth_test)
+              .setDepthTestEnable(depth_test == DepthTest::on)
               .setDepthWriteEnable(VK_TRUE)
               .setDepthCompareOp(vk::CompareOp::eLess)
               .setDepthBoundsTestEnable(VK_FALSE)

@@ -74,10 +74,9 @@ public:
 
     Texture create_texture(const std::filesystem::path& path);
 
-    Texture create_texture(TextureFormat format, uint32_t width, uint32_t height, const std::byte* data);
+    Texture create_texture(TextureFormat format, Vector2i size, const std::byte* data);
 
-    Texture create_texture(
-        TextureFormat format, uint32_t width, uint32_t height, uint32_t depth, const std::byte* data);
+    Texture create_texture(TextureFormat format, Vector3i size, const std::byte* data);
 
     void update_texture(const Texture& texture, const std::byte* data);
 
@@ -86,7 +85,7 @@ public:
         const Shader& fragment_shader,
         const VertexLayout& vertex_layout,
         CullMode cull_mode,
-        bool depth_test = true);
+        DepthTest depth_test);
 
     void destroy(VertexBuffer& vertex_buffer);
 
@@ -102,19 +101,41 @@ public:
 
     void destroy(Framebuffer& framebuffer);
 
-    void update_uniform(UniformBuffer& uniform_buffer, UniformLocation location, float value, bool persist = true);
-
-    void update_uniform(UniformBuffer& uniform_buffer, UniformLocation location, Vector2 value, bool persist = true);
-
-    void update_uniform(UniformBuffer& uniform_buffer, UniformLocation location, Vector3 value, bool persist = true);
-
-    void update_uniform(UniformBuffer& uniform_buffer, UniformLocation location, Vector4 value, bool persist = true);
+    void update_uniform(
+        UniformBuffer& uniform_buffer,
+        UniformLocation location,
+        float value,
+        PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
     void update_uniform(
-        UniformBuffer& uniform_buffer, UniformLocation location, const Matrix3& value, bool persist = true);
+        UniformBuffer& uniform_buffer,
+        UniformLocation location,
+        Vector2 value,
+        PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
     void update_uniform(
-        UniformBuffer& uniform_buffer, UniformLocation location, const Matrix4& value, bool persist = true);
+        UniformBuffer& uniform_buffer,
+        UniformLocation location,
+        Vector3 value,
+        PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
+
+    void update_uniform(
+        UniformBuffer& uniform_buffer,
+        UniformLocation location,
+        Vector4 value,
+        PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
+
+    void update_uniform(
+        UniformBuffer& uniform_buffer,
+        UniformLocation location,
+        const Matrix3& value,
+        PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
+
+    void update_uniform(
+        UniformBuffer& uniform_buffer,
+        UniformLocation location,
+        const Matrix4& value,
+        PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
     void bind_descriptor_set(DescriptorSet& descriptor_set) const;
 
@@ -142,14 +163,18 @@ private:
     void bind_descriptor_sets(uint32_t num, const std::array<const DescriptorSet*, 4>& descriptor_sets) const;
 
     template <typename T>
-    void update_uniform(UniformBuffer& uniform_buffer, const UniformLocation location, T value, const bool persist)
+    void update_uniform(
+        UniformBuffer& uniform_buffer,
+        const UniformLocation location,
+        T value,
+        const PersistUniformAcrossFrames persist)
     {
         static_assert(sizeof(T) <= detail::max_uniform_value_size);
         const uint64_t handle = uniform_buffer.handle();
         std::array<std::byte, detail::max_uniform_value_size> data; // NOLINT(*-pro-type-member-init)
         memcpy(data.data(), &value, sizeof(T));
         m_deferred_operations.emplace_back(detail::DeferredUniformUpdateData {
-            .counter = persist ? c_frames_in_flight : 1,
+            .counter = persist == PersistUniformAcrossFrames::on ? c_frames_in_flight : 1,
             .handle = handle,
             .location = location,
             .data = data,

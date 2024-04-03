@@ -10,7 +10,7 @@ inline GraphicsPipeline::GraphicsPipeline(
     const Shader& fragment_shader,
     const VertexLayout& vertex_layout,
     const CullMode cull_mode,
-    const bool depth_test)
+    const DepthTest depth_test)
 {
     *this = std::move(
         renderer.create_graphics_pipeline(vertex_shader, fragment_shader, vertex_layout, cull_mode, depth_test));

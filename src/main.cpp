@@ -48,11 +48,11 @@ void init_packet(SchrodingerSim3d& sim)
     for (int j = 0; j < sim.size() * sim.size() * sim.size(); ++j) {
         constexpr auto a = 1.0;
         constexpr auto x0 = 10;
-        constexpr auto y0 = 36;
-        constexpr auto z0 = 36;
-        constexpr auto sigma_x = 5.0;
-        constexpr auto sigma_y = 5.0;
-        constexpr auto sigma_z = 5.0;
+        constexpr auto y0 = 32;
+        constexpr auto z0 = 32;
+        constexpr auto sigma_x = 10.0;
+        constexpr auto sigma_y = 10.0;
+        constexpr auto sigma_z = 2.0;
         constexpr auto mom_x = 2.0;
         constexpr auto mom_y = 0.0;
         constexpr auto mom_z = 0.0;
@@ -142,8 +142,8 @@ int main()
     auto [vertex_layout, vertex_buffer, index_buffer] = create_sim_mesh_data(renderer);
     mve::Shader vert_shader("../res/bin/shader/cloud.vert.spv");
     mve::Shader frag_shader("../res/bin/shader/cloud.frag.spv");
-    mve::GraphicsPipeline pipeline
-        = renderer.create_graphics_pipeline(vert_shader, frag_shader, vertex_layout, mve::CullMode::back, true);
+    mve::GraphicsPipeline pipeline = renderer.create_graphics_pipeline(
+        vert_shader, frag_shader, vertex_layout, mve::CullMode::back, mve::DepthTest::on);
 
     mve::DescriptorSet global_descriptor = pipeline.create_descriptor_set(vert_shader.descriptor_set(0));
     mve::UniformBuffer global_ubo = renderer.create_uniform_buffer(vert_shader.descriptor_set(0).binding(0));
@@ -154,7 +154,7 @@ int main()
     Camera camera;
 
     SchrodingerSim3d::Properties sim_props {
-        .size = 72, .grid_spacing = 1.0, .timestep = 0.002, .hbar = 1.0, .mass = 1.0
+        .size = 64, .grid_spacing = 1.0, .timestep = 0.004, .hbar = 1.0, .mass = 1.0
     };
     g_global_data.sim = std::make_unique<SchrodingerSim3d>(sim_props);
 
@@ -162,8 +162,7 @@ int main()
 
     std::vector<std::byte> buffer(sim_props.size * sim_props.size * sim_props.size);
 
-    mve::Texture texture
-        = renderer.create_texture(mve::TextureFormat::r, sim_props.size, sim_props.size, sim_props.size, buffer.data());
+    mve::Texture texture = renderer.create_texture(mve::TextureFormat::r, mve::Vector3i(sim_props.size), buffer.data());
 
     global_descriptor.write_binding(frag_shader.descriptor_set(0).binding(1), texture);
 
