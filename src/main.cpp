@@ -140,8 +140,8 @@ int main()
     mve::Renderer renderer(window, "Schrodinger Sim 3D", 1, 0, 0);
 
     auto [vertex_layout, vertex_buffer, index_buffer] = create_sim_mesh_data(renderer);
-    mve::Shader vert_shader("../res/bin/shader/cloud.vert.spv");
-    mve::Shader frag_shader("../res/bin/shader/cloud.frag.spv");
+    mve::Shader vert_shader("./res/bin/shader/cloud.vert.spv");
+    mve::Shader frag_shader("./res/bin/shader/cloud.frag.spv");
     mve::GraphicsPipeline pipeline = renderer.create_graphics_pipeline(
         vert_shader, frag_shader, vertex_layout, mve::CullMode::back, mve::DepthTest::on);
 

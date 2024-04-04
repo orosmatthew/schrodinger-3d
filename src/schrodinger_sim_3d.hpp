@@ -149,7 +149,7 @@ private:
         auto neighbor_sum = std::complex(0.0, 0.0);
         const auto [x, y, z] = idx_to_pos(idx);
         for (const auto& [n_x, n_y, n_z] : neighbors) {
-            if (const mve::Vector3i neighbor { x + n_x, y + n_y, z + n_z }; in_bounds(neighbor)) {
+            if (const mve::Vector3i neighbor { x + n_x, y + n_y, z + n_z }; in_bounds(neighbor)) [[likely]] {
                 neighbor_sum += m_buffer_present[pos_to_idx(neighbor)];
             }
         }

@@ -9,8 +9,8 @@
 
 TextPipeline::TextPipeline(mve::Renderer& renderer, const int point_size)
     : m_renderer(&renderer)
-    , m_vert_shader("../res/bin/shader/text.vert.spv")
-    , m_frag_shader("../res/bin/shader/text.frag.spv")
+    , m_vert_shader("./res/bin/shader/text.vert.spv")
+    , m_frag_shader("./res/bin/shader/text.frag.spv")
     , m_pipeline(renderer, m_vert_shader, m_frag_shader, c_vertex_layout, mve::CullMode::back, mve::DepthTest::on)
     , m_global_ubo(renderer, m_vert_shader.descriptor_set(0).binding(0))
     , m_global_descriptor_set(renderer, m_pipeline, m_vert_shader.descriptor_set(0))
@@ -55,7 +55,7 @@ TextPipeline::TextPipeline(mve::Renderer& renderer, const int point_size)
     MVE_ASSERT(result == 0, "[Text Pipeline] Failed to init FreeType")
 
     FT_Face font_face;
-    result = FT_New_Face(font_lib, "../res/iosevka-regular.ttf", 0, &font_face);
+    result = FT_New_Face(font_lib, "./res/iosevka-regular.ttf", 0, &font_face);
     MVE_ASSERT(result == 0, "[Text Pipeline] Failed to load font")
 
     FT_Set_Pixel_Sizes(font_face, 0, c_point_size);
