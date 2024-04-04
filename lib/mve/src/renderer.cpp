@@ -1167,10 +1167,10 @@ GraphicsPipeline Renderer::create_graphics_pipeline(
     return { *this, *id };
 }
 
-ComputePipeline Renderer::create_compute_pipeline()
-{
-    // TODO
-}
+// ComputePipeline Renderer::create_compute_pipeline()
+// {
+//     // TODO
+// }
 
 DescriptorSet Renderer::create_descriptor_set(
     const GraphicsPipeline& graphics_pipeline, const ShaderDescriptorSet& descriptor_set)
@@ -1577,10 +1577,10 @@ void Renderer::destroy(GraphicsPipeline& graphics_pipeline)
     m_deferred_operations.emplace_back(DeferredDestroyGraphicsPipeline { handle });
 }
 
-void Renderer::destroy(ComputePipeline& compute_pipeline)
-{
-    // TODO
-}
+// void Renderer::destroy(ComputePipeline& compute_pipeline)
+// {
+//     // TODO
+// }
 
 void Renderer::destroy(UniformBuffer& uniform_buffer)
 {

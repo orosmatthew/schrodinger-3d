@@ -84,7 +84,7 @@ public:
         CullMode cull_mode,
         DepthTest depth_test);
 
-    ComputePipeline create_compute_pipeline();
+    // ComputePipeline create_compute_pipeline();
 
     void destroy(VertexBuffer& vertex_buffer);
 
@@ -92,7 +92,7 @@ public:
 
     void destroy(GraphicsPipeline& graphics_pipeline);
 
-    void destroy(ComputePipeline& compute_pipeline);
+    // void destroy(ComputePipeline& compute_pipeline);
 
     void destroy(DescriptorSet& descriptor_set);
 

@@ -29,7 +29,7 @@ class UniformLocation;
 class DescriptorSet;
 class Framebuffer;
 class GraphicsPipeline;
-class ComputePipeline;
+// class ComputePipeline;
 class IndexBuffer;
 class Monitor;
 class Texture;
@@ -152,40 +152,40 @@ private:
     Handle m_handle {};
 };
 
-class ComputePipeline {
-public:
-    explicit inline ComputePipeline(Renderer& renderer);
-
-    inline ComputePipeline(Renderer& renderer, Handle handle);
-
-    ComputePipeline(const GraphicsPipeline&) = delete;
-
-    inline ComputePipeline(ComputePipeline&& other) noexcept;
-
-    inline ~ComputePipeline();
-
-    inline void destroy();
-
-    ComputePipeline& operator=(const ComputePipeline&) = delete;
-
-    inline ComputePipeline& operator=(ComputePipeline&& other) noexcept;
-
-    [[nodiscard]] inline bool operator==(const ComputePipeline& other) const;
-
-    [[nodiscard]] inline bool operator<(const ComputePipeline& other) const;
-
-    [[nodiscard]] inline Handle handle() const;
-
-    [[nodiscard]] inline bool is_valid() const;
-
-    inline void invalidate();
-
-    [[nodiscard]] inline DescriptorSet create_descriptor_set(const ShaderDescriptorSet& descriptor_set) const;
-
-private:
-    Renderer* m_renderer {};
-    Handle m_handle {};
-};
+// class ComputePipeline {
+// public:
+//     explicit inline ComputePipeline(Renderer& renderer);
+//
+//     inline ComputePipeline(Renderer& renderer, Handle handle);
+//
+//     ComputePipeline(const GraphicsPipeline&) = delete;
+//
+//     inline ComputePipeline(ComputePipeline&& other) noexcept;
+//
+//     inline ~ComputePipeline();
+//
+//     inline void destroy();
+//
+//     ComputePipeline& operator=(const ComputePipeline&) = delete;
+//
+//     inline ComputePipeline& operator=(ComputePipeline&& other) noexcept;
+//
+//     [[nodiscard]] inline bool operator==(const ComputePipeline& other) const;
+//
+//     [[nodiscard]] inline bool operator<(const ComputePipeline& other) const;
+//
+//     [[nodiscard]] inline Handle handle() const;
+//
+//     [[nodiscard]] inline bool is_valid() const;
+//
+//     inline void invalidate();
+//
+//     [[nodiscard]] inline DescriptorSet create_descriptor_set(const ShaderDescriptorSet& descriptor_set) const;
+//
+// private:
+//     Renderer* m_renderer {};
+//     Handle m_handle {};
+// };
 
 class IndexBuffer {
 public:

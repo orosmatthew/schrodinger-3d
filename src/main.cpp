@@ -154,7 +154,7 @@ int main()
     Camera camera;
 
     SchrodingerSim3d::Properties sim_props {
-        .size = 64, .grid_spacing = 1.0, .timestep = 0.004, .hbar = 1.0, .mass = 1.0
+        .size = 64, .grid_spacing = 1.0, .timestep = 0.002, .hbar = 1.0, .mass = 1.0
     };
     g_global_data.sim = std::make_unique<SchrodingerSim3d>(sim_props);
 
