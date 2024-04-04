@@ -15,24 +15,37 @@
 #include "util/fixed_loop.hpp"
 #include "wire_box_mesh.hpp"
 
+static BS::thread_pool g_thread_pool;
+
 void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer)
 {
     double prob_min = std::numeric_limits<double>::max();
     double prob_max = std::numeric_limits<double>::min();
-    for (int i = 0; i < sim.size() * sim.size() * sim.size(); ++i) {
-        const auto sim_value = sim.value_at_idx(i);
-        const auto abs = std::norm(sim_value);
-        if (abs > prob_max) {
-            prob_max = abs;
-        }
-        if (abs < prob_min) {
-            prob_min = abs;
-        }
+    // ReSharper disable once CppTooWideScopeInitStatement
+    BS::multi_future<std::pair<double, double>> extremes
+        = g_thread_pool.submit_blocks(0, sim.size() * sim.size() * sim.size(), [&sim](const int start, const int end) {
+              double block_min = std::numeric_limits<double>::max();
+              double block_max = std::numeric_limits<double>::min();
+              for (int i = start; i < end; ++i) {
+                  const auto sim_value = sim.value_at_idx(i);
+                  const auto abs = std::norm(sim_value);
+                  block_min = std::min(abs, block_min);
+                  block_max = std::max(abs, block_max);
+              }
+              return std::pair(block_min, block_max);
+          });
+    for (std::future<std::pair<double, double>>& future : extremes) {
+        auto [min, max] = future.get();
+        prob_min = std::min(min, prob_min);
+        prob_max = std::max(max, prob_max);
     }
-    for (int i = 0; i < sim.size() * sim.size() * sim.size(); ++i) {
-        const float sim_value = static_cast<float>(std::norm(sim.value_at_idx(i)));
-        buffer[i] = static_cast<std::byte>(std::clamp((sim_value - prob_min) / prob_max, 0.0, 1.0) * 255);
-    }
+    g_thread_pool.detach_blocks(0, sim.size() * sim.size() * sim.size(), [&](const int start, const int end) {
+        for (int i = start; i < end; ++i) {
+            const float sim_value = static_cast<float>(std::norm(sim.value_at_idx(i)));
+            buffer[i] = static_cast<std::byte>(std::clamp((sim_value - prob_min) / prob_max, 0.0, 1.0) * 255);
+        }
+    });
+    g_thread_pool.wait();
 }
 
 struct SimMeshData {
@@ -154,9 +167,9 @@ int main()
     Camera camera;
 
     SchrodingerSim3d::Properties sim_props {
+    g_global_data.sim = std::make_unique<SchrodingerSim3d>(sim_props);
         .size = 64, .grid_spacing = 1.0, .timestep = 0.002, .hbar = 1.0, .mass = 1.0
     };
-    g_global_data.sim = std::make_unique<SchrodingerSim3d>(sim_props);
 
     init_packet(*g_global_data.sim);
 

@@ -51,13 +51,11 @@ public:
 
     void update()
     {
-        auto update_at = [&](const int i) { m_buffer_future[i] = future_at_idx(i); };
-
         m_buffer_mutex.lock_shared();
         m_thread_pool.detach_blocks<int>(0, c_size * c_size * c_size, [&](const int start, const int end) {
             for (int i = start; i < end; ++i) {
                 if (!m_buffer_fixed[i]) {
-                    update_at(i);
+                    m_buffer_future[i] = future_at_idx(i);
                 }
             }
         });
@@ -204,6 +202,6 @@ private:
     std::vector<std::complex<double>> m_buffer_future;
     std::vector<double> m_buffer_potential;
     std::vector<bool> m_buffer_fixed;
-    BS::thread_pool m_thread_pool {};
+    BS::thread_pool m_thread_pool;
     std::shared_mutex m_buffer_mutex;
 };
