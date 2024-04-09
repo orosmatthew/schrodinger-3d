@@ -59,20 +59,20 @@ void main() {
     float dist = near;
 
     for (int i = 0; i < STEPS; ++i) {
-        float s = texture(volume, ray.origin).r;
+        float s = texture(volume, ray.origin).a;
 
         // Calculate the gradient (normal) of the smoke
         vec3 gradient = vec3(
-            texture(volume, ray.origin + vec3(0.01, 0, 0)).r - texture(volume, ray.origin - vec3(0.01, 0, 0)).r,
-            texture(volume, ray.origin + vec3(0, 0.01, 0)).r - texture(volume, ray.origin - vec3(0, 0.01, 0)).r,
-            texture(volume, ray.origin + vec3(0, 0, 0.01)).r - texture(volume, ray.origin - vec3(0, 0, 0.01)).r
+            texture(volume, ray.origin + vec3(0.01, 0, 0)).a - texture(volume, ray.origin - vec3(0.01, 0, 0)).a,
+            texture(volume, ray.origin + vec3(0, 0.01, 0)).a - texture(volume, ray.origin - vec3(0, 0.01, 0)).a,
+            texture(volume, ray.origin + vec3(0, 0, 0.01)).a - texture(volume, ray.origin - vec3(0, 0, 0.01)).a
         );
         gradient = normalize(gradient);
 
         // Calculate the lighting as the dot product of the gradient and the light direction
         float lighting = max(0.2, dot(gradient, lightDir));
 
-        acc.rgb += (1.0 - acc.a) * s * base_color * lighting;
+        acc.rgb += (1.0 - acc.a) * s * texture(volume, ray.origin).rgb * lighting;
         acc.a += (1.0 - acc.a) * s;
 
         ray.origin += ray.dir;

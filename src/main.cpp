@@ -42,7 +42,11 @@ void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer
     g_thread_pool.detach_blocks(0, sim.size() * sim.size() * sim.size(), [&](const int start, const int end) {
         for (int i = start; i < end; ++i) {
             const float sim_value = static_cast<float>(std::norm(sim.value_at_idx(i)));
-            buffer[i] = static_cast<std::byte>(std::clamp((sim_value - prob_min) / prob_max, 0.0, 1.0) * 255);
+            const int base = i * 4;
+            buffer[base] = static_cast<std::byte>(static_cast<int>(std::round(0.4 * 255)));
+            buffer[base + 1] = static_cast<std::byte>(static_cast<int>(std::round(1.0 * 255)));
+            buffer[base + 2] = static_cast<std::byte>(static_cast<int>(std::round(0.4 * 255)));
+            buffer[base + 3] = static_cast<std::byte>(std::clamp((sim_value - prob_min) / prob_max, 0.0, 1.0) * 255);
         }
     });
     g_thread_pool.wait();
@@ -173,9 +177,10 @@ int main()
 
     init_packet(*g_global_data.sim);
 
-    std::vector<std::byte> buffer(sim_props.size * sim_props.size * sim_props.size);
+    std::vector<std::byte> buffer(sim_props.size * sim_props.size * sim_props.size * 4);
 
-    mve::Texture texture = renderer.create_texture(mve::TextureFormat::r, mve::Vector3i(sim_props.size), buffer.data());
+    mve::Texture texture
+        = renderer.create_texture(mve::TextureFormat::rgba, mve::Vector3i(sim_props.size), buffer.data());
 
     global_descriptor.write_binding(frag_shader.descriptor_set(0).binding(1), texture);
 

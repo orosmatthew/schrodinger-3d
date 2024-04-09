@@ -1505,8 +1505,7 @@ void Renderer::update_texture(const Texture& texture, const std::byte* data)
     constexpr uint32_t mip_levels = 1;
     // ReSharper disable once CppUseStructuredBinding
     const TextureImpl& texture_impl = m_textures[texture.handle()];
-    const size_t size
-        = texture_impl.image.width * texture_impl.image.height * texture_impl.image.depth * sizeof(std::byte);
+    const size_t size = texture_impl.image.vma_allocation->GetSize();
     const Buffer staging_buffer = create_buffer(
         m_vma_allocator,
         size,
