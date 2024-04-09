@@ -42,7 +42,7 @@ void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer
     g_thread_pool.detach_blocks(0, sim.size() * sim.size() * sim.size(), [&](const int start, const int end) {
         for (int i = start; i < end; ++i) {
             constexpr double min = 0;
-            constexpr double max = 0.001;
+            constexpr double max = 0.0001;
             const std::complex<double> sim_value = sim.value_at_idx(i);
             const auto real = static_cast<float>(sim_value.real());
             const auto imag = static_cast<float>(sim_value.imag());
