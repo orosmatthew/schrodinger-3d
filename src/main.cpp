@@ -41,12 +41,17 @@ void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer
     }
     g_thread_pool.detach_blocks(0, sim.size() * sim.size() * sim.size(), [&](const int start, const int end) {
         for (int i = start; i < end; ++i) {
-            const float sim_value = static_cast<float>(std::norm(sim.value_at_idx(i)));
+            constexpr double min = 0;
+            constexpr double max = 0.001;
+            const std::complex<double> sim_value = sim.value_at_idx(i);
+            const auto real = static_cast<float>(sim_value.real());
+            const auto imag = static_cast<float>(sim_value.imag());
             const int base = i * 4;
-            buffer[base] = static_cast<std::byte>(static_cast<int>(std::round(0.4 * 255)));
-            buffer[base + 1] = static_cast<std::byte>(static_cast<int>(std::round(1.0 * 255)));
-            buffer[base + 2] = static_cast<std::byte>(static_cast<int>(std::round(0.4 * 255)));
-            buffer[base + 3] = static_cast<std::byte>(std::clamp((sim_value - prob_min) / prob_max, 0.0, 1.0) * 255);
+            buffer[base] = static_cast<std::byte>(std::clamp((real - min) / max, 0.0, 1.0) * 255);
+            buffer[base + 1] = static_cast<std::byte>(std::clamp((imag - min) / max, 0.0, 1.0) * 255);
+            buffer[base + 2] = static_cast<std::byte>(0);
+            buffer[base + 3]
+                = static_cast<std::byte>(std::clamp((std::norm(sim_value) - prob_min) / prob_max, 0.0, 1.0) * 255);
         }
     });
     g_thread_pool.wait();
@@ -67,9 +72,9 @@ void init_packet(SchrodingerSim3d& sim)
         constexpr auto x0 = 10;
         constexpr auto y0 = 32;
         constexpr auto z0 = 32;
-        constexpr auto sigma_x = 10.0;
-        constexpr auto sigma_y = 10.0;
-        constexpr auto sigma_z = 2.0;
+        constexpr auto sigma_x = 5.0;
+        constexpr auto sigma_y = 5.0;
+        constexpr auto sigma_z = 5.0;
         constexpr auto mom_x = 2.0;
         constexpr auto mom_y = 0.0;
         constexpr auto mom_z = 0.0;

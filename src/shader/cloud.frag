@@ -72,7 +72,7 @@ void main() {
         // Calculate the lighting as the dot product of the gradient and the light direction
         float lighting = max(0.2, dot(gradient, lightDir));
 
-        acc.rgb += (1.0 - acc.a) * s * texture(volume, ray.origin).rgb * lighting;
+        acc.rgb += (1.0 - acc.a) * s * texture(volume, ray.origin).rgb;// * lighting;
         acc.a += (1.0 - acc.a) * s;
 
         ray.origin += ray.dir;
