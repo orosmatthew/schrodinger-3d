@@ -69,15 +69,15 @@ void init_packet(SchrodingerSim3d& sim)
     constexpr auto i = std::complex(0.0, 1.0);
     for (int j = 0; j < sim.size() * sim.size() * sim.size(); ++j) {
         constexpr auto a = 1.0;
-        constexpr auto x0 = 10;
+        constexpr auto x0 = 32;
         constexpr auto y0 = 32;
         constexpr auto z0 = 32;
         constexpr auto sigma_x = 5.0;
         constexpr auto sigma_y = 5.0;
         constexpr auto sigma_z = 5.0;
-        constexpr auto mom_x = 2.0;
-        constexpr auto mom_y = 0.0;
-        constexpr auto mom_z = 0.0;
+        constexpr auto mom_x = 0.7;
+        constexpr auto mom_y = 0.7;
+        constexpr auto mom_z = 0.7;
         const auto [x, y, z] = sim.idx_to_pos(j);
         const auto x_term = std::exp(-std::pow(x - x0, 2.0) / (2.0 * std::pow(sigma_x, 2.0)));
         const auto y_term = std::exp(-std::pow(y - y0, 2.0) / (2.0 * std::pow(sigma_y, 2.0)));
@@ -253,6 +253,11 @@ int main()
 
         if (window.is_key_pressed(mve::Key::escape)) {
             g_global_data.should_exit = true;
+        }
+
+        if (window.is_key_pressed(mve::Key::r)) {
+            g_global_data.sim->clear();
+            init_packet(*g_global_data.sim);
         }
 
         camera.update(window);
