@@ -27,7 +27,7 @@ void SimplePipeline::set_view(const mve::Matrix4& mat)
 {
     m_global_ubo.update(m_view_loc, mat);
 }
-void SimplePipeline::resize(mve::Vector2i extent)
+void SimplePipeline::resize(const mve::Vector2i extent)
 {
     const mve::Matrix4 proj
         = mve::perspective(90.0f, static_cast<float>(extent.x) / static_cast<float>(extent.y), 0.001f, 100.0f);

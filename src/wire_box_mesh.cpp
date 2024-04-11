@@ -98,7 +98,7 @@ WireBoxMesh::MeshData WireBoxMesh::create_rect_mesh(const float length, const fl
     const std::array<uint32_t, 6> quad_indices = { 0, 3, 2, 0, 2, 1 };
     for (int q = 0; q < 6; q++) {
         for (const uint32_t i : quad_indices) {
-            mesh_data.indices.push_back(i + (q * 4));
+            mesh_data.indices.push_back(i + q * 4);
         }
     }
     return mesh_data;

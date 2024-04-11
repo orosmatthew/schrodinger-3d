@@ -57,9 +57,9 @@ void Camera::fixed_update(const mve::Window& window)
     }
 
     dir = dir.rotate(m_body_transform.basis().transpose());
-    m_velocity -= (m_velocity * m_friction) * 0.35f;
+    m_velocity -= m_velocity * m_friction * 0.35f;
 
-    m_velocity += dir.normalize() * m_acceleration * mve::clamp((m_max_speed - m_velocity.length()), 0.0f, 1.0f) * 1.5f;
+    m_velocity += dir.normalize() * m_acceleration * mve::clamp(m_max_speed - m_velocity.length(), 0.0f, 1.0f) * 1.5f;
 
     m_body_transform = m_body_transform.translate(m_velocity);
 }
