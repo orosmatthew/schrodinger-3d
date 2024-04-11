@@ -258,9 +258,9 @@ int main()
     auto sim_theme = SimDisplayTheme::probability;
     bool cursor_captured = true;
 
-    TextPipeline text_pipeline(renderer, 26);
+    TextPipeline text_pipeline(renderer, 28);
     float current_offset = 0.0f;
-    constexpr float offset = 32.0f;
+    constexpr float offset = 34.0f;
     TextBuffer fps_text
         = text_pipeline.create_text_buffer(fps_display_text(0), { 0.0f, current_offset }, 1.0f, { 1.0f, 1.0f, 1.0f });
     current_offset += offset;
