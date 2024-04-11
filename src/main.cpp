@@ -104,6 +104,13 @@ static void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>&
     g_thread_pool.detach_blocks(0, sim.size() * sim.size() * sim.size(), [&](const int start, const int end) {
         for (int i = start; i < end; ++i) {
             const int base = i * 4;
+            if (sim.fixed_at_idx(i)) {
+                buffer[base] = static_cast<std::byte>(0);
+                buffer[base + 1] = static_cast<std::byte>(0);
+                buffer[base + 2] = static_cast<std::byte>(255);
+                buffer[base + 3] = static_cast<std::byte>(255);
+                continue;
+            }
             if (theme == SimDisplayTheme::components) {
                 constexpr double comp_min = 0;
                 constexpr double comp_max = 0.0001;
@@ -123,12 +130,6 @@ static void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>&
                 buffer[base + 2] = static_cast<std::byte>(255);
                 buffer[base + 3]
                     = static_cast<std::byte>(std::clamp((sim_value - prob_min) / prob_max, 0.0, 1.0) * 255);
-            }
-            if (sim.fixed_at_idx(i)) {
-                buffer[base] = static_cast<std::byte>(0);
-                buffer[base + 1] = static_cast<std::byte>(0);
-                buffer[base + 2] = static_cast<std::byte>(255);
-                buffer[base + 3] = static_cast<std::byte>(255);
             }
         }
     });
