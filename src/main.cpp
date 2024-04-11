@@ -160,7 +160,7 @@ static void init_packet(SchrodingerSim3d& sim)
     }
 
     // Wall
-    constexpr std::array slit_ys = { 32 - 5, 32 - 4, 32 + 4, 32 + 5 };
+    constexpr std::array slit_ys = { 32 - 3, 32 - 2, 32 + 2, 32 + 3 };
     for (int y = 0; y < sim.size(); ++y) {
         if (std::ranges::find(slit_ys, y) != slit_ys.end()) {
             continue;
