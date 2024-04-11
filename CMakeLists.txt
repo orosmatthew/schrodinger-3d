@@ -53,7 +53,6 @@ set(LIBS
 
 set(LIB_INCLUDES
         external/spdlog-1.13.0/include
-        external/tinyobjloader-45f683c/include
         external/thread-pool-4.1.0/include)
 
 add_executable(${PROJECT_NAME})
