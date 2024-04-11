@@ -103,13 +103,13 @@ static void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>&
     }
     g_thread_pool.detach_blocks(0, sim.size() * sim.size() * sim.size(), [&](const int start, const int end) {
         for (int i = start; i < end; ++i) {
+            const int base = i * 4;
             if (theme == SimDisplayTheme::components) {
                 constexpr double comp_min = 0;
                 constexpr double comp_max = 0.0001;
                 const std::complex<double> sim_value = sim.value_at_idx(i);
                 const auto real = sim_value.real();
                 const auto imag = sim_value.imag();
-                const int base = i * 4;
                 buffer[base] = static_cast<std::byte>(std::clamp((real - comp_min) / comp_max, 0.0, 1.0) * 255);
                 buffer[base + 1] = static_cast<std::byte>(std::clamp((imag - comp_min) / comp_max, 0.0, 1.0) * 255);
                 buffer[base + 2] = static_cast<std::byte>(0);
@@ -118,12 +118,17 @@ static void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>&
             }
             else {
                 const double sim_value = std::norm(sim.value_at_idx(i));
-                const int base = i * 4;
                 buffer[base] = static_cast<std::byte>(255);
                 buffer[base + 1] = static_cast<std::byte>(255);
                 buffer[base + 2] = static_cast<std::byte>(255);
                 buffer[base + 3]
                     = static_cast<std::byte>(std::clamp((sim_value - prob_min) / prob_max, 0.0, 1.0) * 255);
+            }
+            if (sim.fixed_at_idx(i)) {
+                buffer[base] = static_cast<std::byte>(0);
+                buffer[base + 1] = static_cast<std::byte>(0);
+                buffer[base + 2] = static_cast<std::byte>(255);
+                buffer[base + 3] = static_cast<std::byte>(255);
             }
         }
     });
@@ -152,6 +157,18 @@ static void init_packet(SchrodingerSim3d& sim)
         const auto pos = x_term * y_term * z_term;
         const auto mom = std::exp(i * (mom_x * x + mom_y * y + mom_z * z));
         sim.set_at({ x, y, z }, a * pos * mom);
+    }
+
+    // Wall
+    constexpr std::array slit_ys = { 32 - 5, 32 - 4, 32 + 4, 32 + 5 };
+    for (int y = 0; y < sim.size(); ++y) {
+        if (std::ranges::find(slit_ys, y) != slit_ys.end()) {
+            continue;
+        }
+        for (int z = 0; z < sim.size(); ++z) {
+            constexpr int wall_x = 40;
+            sim.set_fixed_at({ wall_x, y, z }, true);
+        }
     }
     sim.unlock_write();
 }
