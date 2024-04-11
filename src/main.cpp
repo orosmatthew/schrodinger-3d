@@ -15,11 +15,35 @@
 #include "util/fixed_loop.hpp"
 #include "wire_box_mesh.hpp"
 
-static BS::thread_pool g_thread_pool;
+struct SimMeshData {
+    mve::VertexLayout vertex_layout;
+    mve::VertexBuffer vertex_buffer;
+    mve::IndexBuffer index_buffer;
+};
+
+struct GlobalData {
+    std::thread sim_thread;
+    std::atomic<bool> should_exit = false;
+    std::unique_ptr<SchrodingerSim3d> sim;
+    std::atomic<int> sim_frame_count = 0;
+};
 
 enum class SimDisplayTheme { probability, components };
 
-std::string theme_display_text(const SimDisplayTheme theme)
+static BS::thread_pool g_thread_pool;
+static GlobalData g_global_data;
+
+static std::string fps_display_text(const int fps)
+{
+    return "FPS: " + std::to_string(fps);
+}
+
+static std::string tps_display_text(const int tps)
+{
+    return "TPS: " + std::to_string(tps);
+}
+
+static std::string theme_display_text(const SimDisplayTheme theme)
 {
     switch (theme) {
     case SimDisplayTheme::probability:
@@ -30,7 +54,15 @@ std::string theme_display_text(const SimDisplayTheme theme)
     return "[t] Theme: unknown";
 }
 
-std::string lighting_display_text(const bool lighting)
+static std::string cursor_display_text(const bool captured)
+{
+    if (captured) {
+        return "[c] Cursor: captured";
+    }
+    return "[c] Cursor: free";
+}
+
+static std::string lighting_display_text(const bool lighting)
 {
     if (lighting) {
         return "[l] Lighting: on";
@@ -38,7 +70,15 @@ std::string lighting_display_text(const bool lighting)
     return "[l] Lighting: off";
 }
 
-void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer, const SimDisplayTheme theme)
+static std::string fullscreen_display_text(const bool fullscreen)
+{
+    if (fullscreen) {
+        return "[f] Fullscreen: on";
+    }
+    return "[f] Fullscreen: off";
+}
+
+static void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer, const SimDisplayTheme theme)
 {
     double prob_min = std::numeric_limits<double>::max();
     double prob_max = std::numeric_limits<double>::min();
@@ -90,13 +130,7 @@ void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer
     g_thread_pool.wait();
 }
 
-struct SimMeshData {
-    mve::VertexLayout vertex_layout;
-    mve::VertexBuffer vertex_buffer;
-    mve::IndexBuffer index_buffer;
-};
-
-void init_packet(SchrodingerSim3d& sim)
+static void init_packet(SchrodingerSim3d& sim)
 {
     sim.lock_write();
     constexpr auto i = std::complex(0.0, 1.0);
@@ -122,7 +156,7 @@ void init_packet(SchrodingerSim3d& sim)
     sim.unlock_write();
 }
 
-SimMeshData create_sim_mesh_data(mve::Renderer& renderer)
+static SimMeshData create_sim_mesh_data(mve::Renderer& renderer)
 {
     mve::VertexLayout vertex_layout;
     vertex_layout.push_back(mve::VertexAttributeType::vec3); // pos
@@ -171,15 +205,7 @@ SimMeshData create_sim_mesh_data(mve::Renderer& renderer)
                          .index_buffer = renderer.create_index_buffer(indices) };
 }
 
-struct GlobalData {
-    std::thread sim_thread;
-    std::atomic<bool> should_exit = false;
-    std::unique_ptr<SchrodingerSim3d> sim;
-    std::atomic<int> sim_frame_count = 0;
-};
-static GlobalData g_global_data;
-
-void sim_thread_process()
+static void sim_thread_process()
 {
     while (!g_global_data.should_exit) {
         g_global_data.sim->update();
@@ -230,14 +256,28 @@ int main()
     util::FixedLoop fixed_loop(60.0f);
 
     auto sim_theme = SimDisplayTheme::probability;
+    bool cursor_captured = true;
 
-    TextPipeline text_pipeline(renderer, 36);
-    TextBuffer fps_text = text_pipeline.create_text_buffer("FPS:", { 0.0f, 0.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
-    TextBuffer tick_text = text_pipeline.create_text_buffer("TPS: ", { 0.0f, 40.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
+    TextPipeline text_pipeline(renderer, 26);
+    float current_offset = 0.0f;
+    constexpr float offset = 32.0f;
+    TextBuffer fps_text
+        = text_pipeline.create_text_buffer(fps_display_text(0), { 0.0f, current_offset }, 1.0f, { 1.0f, 1.0f, 1.0f });
+    current_offset += offset;
+    TextBuffer tick_text
+        = text_pipeline.create_text_buffer(tps_display_text(0), { 0.0f, current_offset }, 1.0f, { 1.0f, 1.0f, 1.0f });
+    current_offset += offset;
     TextBuffer lighting_text = text_pipeline.create_text_buffer(
-        lighting_display_text(shader_lighting), { 0.0f, 80.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
-    TextBuffer theme_text
-        = text_pipeline.create_text_buffer(theme_display_text(sim_theme), { 0.0f, 120.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
+        lighting_display_text(shader_lighting), { 0.0f, current_offset }, 1.0f, { 1.0f, 1.0f, 1.0f });
+    current_offset += offset;
+    TextBuffer theme_text = text_pipeline.create_text_buffer(
+        theme_display_text(sim_theme), { 0.0f, current_offset }, 1.0f, { 1.0f, 1.0f, 1.0f });
+    current_offset += offset;
+    TextBuffer cursor_text = text_pipeline.create_text_buffer(
+        cursor_display_text(cursor_captured), { 0.0f, current_offset }, 1.0f, { 1.0f, 1.0f, 1.0f });
+    current_offset += offset;
+    TextBuffer fullscreen_text = text_pipeline.create_text_buffer(
+        fullscreen_display_text(window.is_fullscreen()), { 0.0f, current_offset }, 1.0f, { 1.0f, 1.0f, 1.0f });
 
     SimplePipeline simple_pipeline(renderer);
 
@@ -264,7 +304,6 @@ int main()
     g_global_data.sim_thread = std::thread(sim_thread_process);
 
     window.disable_cursor();
-    bool cursor_captured = true;
     int current_frame_count = 0;
     int frame_count;
     auto begin_time = std::chrono::steady_clock::time_point();
@@ -274,11 +313,13 @@ int main()
         }
         window.poll_events();
 
-        if (window.is_key_down(mve::Key::left_alt) && window.is_key_pressed(mve::Key::enter)) {
+        if (window.is_key_pressed(mve::Key::f)) {
             if (window.is_fullscreen()) {
+                fullscreen_text.update(fullscreen_display_text(false));
                 window.windowed();
             }
             else {
+                fullscreen_text.update(fullscreen_display_text(true));
                 window.fullscreen(true);
             }
         }
@@ -286,10 +327,12 @@ int main()
         if (window.is_key_pressed(mve::Key::c)) {
             if (cursor_captured) {
                 window.enable_cursor();
+                cursor_text.update(cursor_display_text(false));
                 cursor_captured = false;
             }
             else {
                 window.disable_cursor();
+                cursor_text.update(cursor_display_text(true));
                 cursor_captured = true;
             }
         }
@@ -327,7 +370,9 @@ int main()
             }
         }
 
-        camera.update(window);
+        if (cursor_captured) {
+            camera.update(window);
+        }
         fixed_loop.update(1, [&] { camera.fixed_update(window); });
 
         g_global_data.sim->lock_read();
@@ -354,6 +399,8 @@ int main()
         text_pipeline.draw(tick_text);
         text_pipeline.draw(lighting_text);
         text_pipeline.draw(theme_text);
+        text_pipeline.draw(cursor_text);
+        text_pipeline.draw(fullscreen_text);
 
         renderer.end_render_pass();
         renderer.end_frame(window);
@@ -362,8 +409,8 @@ int main()
             std::chrono::duration_cast<std::chrono::microseconds>(end_time - begin_time).count() >= 1000000) {
             begin_time = std::chrono::steady_clock::now();
             frame_count = current_frame_count;
-            fps_text.update("FPS:" + std::to_string(frame_count));
-            tick_text.update("TPS:" + std::to_string(g_global_data.sim_frame_count));
+            fps_text.update(fps_display_text(frame_count));
+            tick_text.update(tps_display_text(g_global_data.sim_frame_count));
             g_global_data.sim_frame_count = 0;
             current_frame_count = 0;
         }
