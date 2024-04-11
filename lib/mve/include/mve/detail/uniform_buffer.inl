@@ -61,6 +61,13 @@ inline void UniformBuffer::update(
 {
     m_renderer->update_uniform(*this, location, value, persist);
 }
+
+inline void UniformBuffer::update(
+    const UniformLocation location, const int value, const PersistUniformAcrossFrames persist)
+{
+    m_renderer->update_uniform(*this, location, value, persist);
+}
+
 inline void UniformBuffer::update(
     const UniformLocation location, const Matrix3& value, const PersistUniformAcrossFrames persist)
 {

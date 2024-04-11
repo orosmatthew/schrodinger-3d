@@ -3,6 +3,7 @@
 layout (set = 0, binding = 0) uniform GlobalUniform {
     mat4 view;
     mat4 proj;
+    int lighting;
 } global_ubo;
 
 struct Ray {
@@ -13,6 +14,7 @@ struct Ray {
 layout (location = 0) in vec3 in_pos;
 
 layout (location = 0) out Ray frag_vray;
+layout (location = 2) flat out int frag_lighting;
 
 void main() {
     // Hardcoded for now
@@ -21,5 +23,6 @@ void main() {
 
     frag_vray.dir = in_pos - cam_pos;
     frag_vray.origin = cam_pos + vec3(0.5);
+    frag_lighting = global_ubo.lighting;
     gl_Position = global_ubo.proj * global_ubo.view * vec4(in_pos, 1.0);
 }

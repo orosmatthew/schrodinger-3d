@@ -1336,6 +1336,15 @@ void Renderer::update_uniform(
     update_uniform<Matrix4>(uniform_buffer, location, value, persist);
 }
 
+void Renderer::update_uniform(
+    UniformBuffer& uniform_buffer,
+    const UniformLocation location,
+    const int value,
+    const PersistUniformAcrossFrames persist)
+{
+    update_uniform<int>(uniform_buffer, location, value, persist);
+}
+
 void Renderer::destroy(Texture& texture)
 {
     MVE_VAL_ASSERT(texture.is_valid(), "[Renderer] Attempted to destroy invalid texture")

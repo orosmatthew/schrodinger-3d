@@ -311,6 +311,9 @@ public:
         const Matrix4& value,
         PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
+    inline void update(
+        UniformLocation location, int value, PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
+
 private:
     Renderer* m_renderer {};
     Handle m_handle {};

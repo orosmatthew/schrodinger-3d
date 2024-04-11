@@ -41,14 +41,14 @@ void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer
     }
     g_thread_pool.detach_blocks(0, sim.size() * sim.size() * sim.size(), [&](const int start, const int end) {
         for (int i = start; i < end; ++i) {
-            constexpr double min = 0;
-            constexpr double max = 0.0001;
+            constexpr double comp_min = 0;
+            constexpr double comp_max = 0.0001;
             const std::complex<double> sim_value = sim.value_at_idx(i);
-            const auto real = static_cast<float>(sim_value.real());
-            const auto imag = static_cast<float>(sim_value.imag());
+            const auto real = sim_value.real();
+            const auto imag = sim_value.imag();
             const int base = i * 4;
-            buffer[base] = static_cast<std::byte>(std::clamp((real - min) / max, 0.0, 1.0) * 255);
-            buffer[base + 1] = static_cast<std::byte>(std::clamp((imag - min) / max, 0.0, 1.0) * 255);
+            buffer[base] = static_cast<std::byte>(std::clamp((real - comp_min) / comp_max, 0.0, 1.0) * 255);
+            buffer[base + 1] = static_cast<std::byte>(std::clamp((imag - comp_min) / comp_max, 0.0, 1.0) * 255);
             buffer[base + 2] = static_cast<std::byte>(0);
             buffer[base + 3]
                 = static_cast<std::byte>(std::clamp((std::norm(sim_value) - prob_min) / prob_max, 0.0, 1.0) * 255);
@@ -69,15 +69,15 @@ void init_packet(SchrodingerSim3d& sim)
     constexpr auto i = std::complex(0.0, 1.0);
     for (int j = 0; j < sim.size() * sim.size() * sim.size(); ++j) {
         constexpr auto a = 1.0;
-        constexpr auto x0 = 32;
+        constexpr auto x0 = 10;
         constexpr auto y0 = 32;
         constexpr auto z0 = 32;
         constexpr auto sigma_x = 5.0;
         constexpr auto sigma_y = 5.0;
         constexpr auto sigma_z = 5.0;
-        constexpr auto mom_x = 0.7;
-        constexpr auto mom_y = 0.7;
-        constexpr auto mom_z = 0.7;
+        constexpr auto mom_x = 2.0;
+        constexpr auto mom_y = 0.0;
+        constexpr auto mom_z = 0.0;
         const auto [x, y, z] = sim.idx_to_pos(j);
         const auto x_term = std::exp(-std::pow(x - x0, 2.0) / (2.0 * std::pow(sigma_x, 2.0)));
         const auto y_term = std::exp(-std::pow(y - y0, 2.0) / (2.0 * std::pow(sigma_y, 2.0)));
@@ -172,6 +172,10 @@ int main()
     global_descriptor.write_binding(vert_shader.descriptor_set(0).binding(0), global_ubo);
     mve::Matrix4 proj = mve::perspective(90.0f, 1.0f, 0.001f, 100.0f);
     global_ubo.update(vert_shader.descriptor_set(0).binding(0).member("proj").location(), proj);
+    const mve::UniformLocation shader_lighting_location
+        = vert_shader.descriptor_set(0).binding(0).member("lighting").location();
+    bool shader_lighting = false;
+    global_ubo.update(shader_lighting_location, shader_lighting);
 
     Camera camera;
 
@@ -194,6 +198,13 @@ int main()
     TextPipeline text_pipeline(renderer, 36);
     TextBuffer fps_text = text_pipeline.create_text_buffer("FPS:", { 0.0f, 0.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
     TextBuffer tick_text = text_pipeline.create_text_buffer("TPS: ", { 0.0f, 40.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
+    TextBuffer lighting_text = text_pipeline.create_text_buffer(
+        // ReSharper disable once CppDFAConstantConditions
+        // ReSharper disable once CppDFAUnreachableCode
+        shader_lighting ? "[l] Lighting: on" : "[l] Lighting: off",
+        { 0.0f, 80.0f },
+        1.0f,
+        { 1.0f, 1.0f, 1.0f });
 
     SimplePipeline simple_pipeline(renderer);
 
@@ -260,6 +271,19 @@ int main()
             init_packet(*g_global_data.sim);
         }
 
+        if (window.is_key_pressed(mve::Key::l)) {
+            if (shader_lighting) {
+                global_ubo.update(shader_lighting_location, 0);
+                lighting_text.update("[l] Lighting: off");
+                shader_lighting = false;
+            }
+            else {
+                global_ubo.update(shader_lighting_location, 1);
+                lighting_text.update("[l] Lighting: on");
+                shader_lighting = true;
+            }
+        }
+
         camera.update(window);
         fixed_loop.update(1, [&] { camera.fixed_update(window); });
 
@@ -285,6 +309,7 @@ int main()
 
         text_pipeline.draw(fps_text);
         text_pipeline.draw(tick_text);
+        text_pipeline.draw(lighting_text);
 
         renderer.end_render_pass();
         renderer.end_frame(window);

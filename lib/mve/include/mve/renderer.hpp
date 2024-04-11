@@ -138,6 +138,12 @@ public:
         const Matrix4& value,
         PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
 
+    void update_uniform(
+        UniformBuffer& uniform_buffer,
+        UniformLocation location,
+        int value,
+        PersistUniformAcrossFrames persist = PersistUniformAcrossFrames::on);
+
     void bind_descriptor_set(DescriptorSet& descriptor_set) const;
 
     void bind_descriptor_sets(const DescriptorSet& descriptor_set_a, const DescriptorSet& descriptor_set_b) const;
