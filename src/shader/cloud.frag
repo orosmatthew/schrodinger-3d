@@ -9,39 +9,35 @@ struct Ray {
 
 layout (set = 0, binding = 1) uniform sampler3D volume;
 
-layout (location = 0) in Ray frag_vray;
-layout (location = 2) flat in int frag_lighting;
+layout (location = 0) in Ray in_vray;
+layout (location = 2) flat in int in_lighting;
 
 layout (location = 0) out vec4 out_color;
 
-vec3 lightDir = normalize(vec3(-1.0, -1.0, -1.0));
+vec3 light_dir = normalize(vec3(-1.0, -1.0, -1.0));
 
 void compute_near_far(Ray ray, inout float near, inout float far) {
-    // Ray is assumed to be in local coordinates, ie:
-    // ray = inverse(objectMatrix * invCameraMatrix) * ray
-    // Equation of ray: O + D * t
-
-    vec3 invRay = 1.0 / ray.dir;
+    vec3 inv_ray = 1.0 / ray.dir;
 
     // Shortcut here, it should be: `aabbMin - ray.origin`.
     // As we are always using normalized AABB, we can skip the line
     // `(0, 0, 0) - ray.origin`.
-    vec3 tbottom = -invRay * ray.origin;
-    vec3 ttop = invRay * (vec3(1.0) - ray.origin);
+    vec3 tbottom = -inv_ray * ray.origin;
+    vec3 ttop = inv_ray * (vec3(1.0) - ray.origin);
 
     vec3 tmin = min(ttop, tbottom);
     vec3 tmax = max(ttop, tbottom);
 
-    float largestMin = max(max(tmin.x, tmin.y), max(tmin.x, tmin.z));
-    float smallestMax = min(min(tmax.x, tmax.y), min(tmax.x, tmax.z));
+    float largest_min = max(max(tmin.x, tmin.y), max(tmin.x, tmin.z));
+    float smallest_max = min(min(tmax.x, tmax.y), min(tmax.x, tmax.z));
 
-    near = largestMin;
-    far = smallestMax;
+    near = largest_min;
+    far = smallest_max;
 }
 
 void main() {
-    Ray ray = frag_vray;
-    ray.dir = normalize(frag_vray.dir);
+    Ray ray = in_vray;
+    ray.dir = normalize(in_vray.dir);
 
     float near = 0.0;
     float far = 0.0;
@@ -63,17 +59,17 @@ void main() {
         float s = texture(volume, ray.origin).a;
 
         float lighting = 1.0;
-        if (frag_lighting == 1) {
+        if (in_lighting == 1) {
             // Calculate the gradient (normal) of the smoke
             vec3 gradient = vec3(
-                texture(volume, ray.origin + vec3(0.01, 0, 0)).a - texture(volume, ray.origin - vec3(0.01, 0, 0)).a,
-                texture(volume, ray.origin + vec3(0, 0.01, 0)).a - texture(volume, ray.origin - vec3(0, 0.01, 0)).a,
-                texture(volume, ray.origin + vec3(0, 0, 0.01)).a - texture(volume, ray.origin - vec3(0, 0, 0.01)).a
+            texture(volume, ray.origin + vec3(0.01, 0, 0)).a - texture(volume, ray.origin - vec3(0.01, 0, 0)).a,
+            texture(volume, ray.origin + vec3(0, 0.01, 0)).a - texture(volume, ray.origin - vec3(0, 0.01, 0)).a,
+            texture(volume, ray.origin + vec3(0, 0, 0.01)).a - texture(volume, ray.origin - vec3(0, 0, 0.01)).a
             );
             gradient = normalize(gradient);
 
             // Calculate the lighting as the dot product of the gradient and the light direction
-            lighting = max(0.2, dot(gradient, lightDir));
+            lighting = max(0.2, dot(gradient, light_dir));
         }
 
         acc.rgb += (1.0 - acc.a) * s * texture(volume, ray.origin).rgb * lighting;
@@ -82,7 +78,7 @@ void main() {
         ray.origin += ray.dir;
         dist += delta;
         if (dist >= far) { break; }
-        if (acc.a > 1.0) { break;}
+        if (acc.a > 1.0) { break; }
     }
 
     out_color = acc;

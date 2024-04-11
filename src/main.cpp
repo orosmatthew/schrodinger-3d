@@ -17,41 +17,74 @@
 
 static BS::thread_pool g_thread_pool;
 
-void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer)
+enum class SimDisplayTheme { probability, components };
+
+std::string theme_display_text(const SimDisplayTheme theme)
+{
+    switch (theme) {
+    case SimDisplayTheme::probability:
+        return "[t] Theme: probability";
+    case SimDisplayTheme::components:
+        return "[t] Theme: components";
+    }
+    return "[t] Theme: unknown";
+}
+
+std::string lighting_display_text(const bool lighting)
+{
+    if (lighting) {
+        return "[l] Lighting: on";
+    }
+    return "[l] Lighting: off";
+}
+
+void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer, const SimDisplayTheme theme)
 {
     double prob_min = std::numeric_limits<double>::max();
     double prob_max = std::numeric_limits<double>::min();
-    // ReSharper disable once CppTooWideScopeInitStatement
-    BS::multi_future<std::pair<double, double>> extremes
-        = g_thread_pool.submit_blocks(0, sim.size() * sim.size() * sim.size(), [&sim](const int start, const int end) {
-              double block_min = std::numeric_limits<double>::max();
-              double block_max = std::numeric_limits<double>::min();
-              for (int i = start; i < end; ++i) {
-                  const auto sim_value = sim.value_at_idx(i);
-                  const auto abs = std::norm(sim_value);
-                  block_min = std::min(abs, block_min);
-                  block_max = std::max(abs, block_max);
-              }
-              return std::pair(block_min, block_max);
-          });
-    for (std::future<std::pair<double, double>>& future : extremes) {
+    for (BS::multi_future<std::pair<double, double>> extremes = g_thread_pool.submit_blocks(
+             0,
+             sim.size() * sim.size() * sim.size(),
+             [&sim](const int start, const int end) {
+                 double block_min = std::numeric_limits<double>::max();
+                 double block_max = std::numeric_limits<double>::min();
+                 for (int i = start; i < end; ++i) {
+                     const auto sim_value = sim.value_at_idx(i);
+                     const auto abs = std::norm(sim_value);
+                     block_min = std::min(abs, block_min);
+                     block_max = std::max(abs, block_max);
+                 }
+                 return std::pair(block_min, block_max);
+             });
+         std::future<std::pair<double, double>> & future : extremes) {
         auto [min, max] = future.get();
         prob_min = std::min(min, prob_min);
         prob_max = std::max(max, prob_max);
     }
     g_thread_pool.detach_blocks(0, sim.size() * sim.size() * sim.size(), [&](const int start, const int end) {
         for (int i = start; i < end; ++i) {
-            constexpr double comp_min = 0;
-            constexpr double comp_max = 0.0001;
-            const std::complex<double> sim_value = sim.value_at_idx(i);
-            const auto real = sim_value.real();
-            const auto imag = sim_value.imag();
-            const int base = i * 4;
-            buffer[base] = static_cast<std::byte>(std::clamp((real - comp_min) / comp_max, 0.0, 1.0) * 255);
-            buffer[base + 1] = static_cast<std::byte>(std::clamp((imag - comp_min) / comp_max, 0.0, 1.0) * 255);
-            buffer[base + 2] = static_cast<std::byte>(0);
-            buffer[base + 3]
-                = static_cast<std::byte>(std::clamp((std::norm(sim_value) - prob_min) / prob_max, 0.0, 1.0) * 255);
+            if (theme == SimDisplayTheme::components) {
+                constexpr double comp_min = 0;
+                constexpr double comp_max = 0.0001;
+                const std::complex<double> sim_value = sim.value_at_idx(i);
+                const auto real = sim_value.real();
+                const auto imag = sim_value.imag();
+                const int base = i * 4;
+                buffer[base] = static_cast<std::byte>(std::clamp((real - comp_min) / comp_max, 0.0, 1.0) * 255);
+                buffer[base + 1] = static_cast<std::byte>(std::clamp((imag - comp_min) / comp_max, 0.0, 1.0) * 255);
+                buffer[base + 2] = static_cast<std::byte>(0);
+                buffer[base + 3]
+                    = static_cast<std::byte>(std::clamp((std::norm(sim_value) - prob_min) / prob_max, 0.0, 1.0) * 255);
+            }
+            else {
+                const double sim_value = std::norm(sim.value_at_idx(i));
+                const int base = i * 4;
+                buffer[base] = static_cast<std::byte>(255);
+                buffer[base + 1] = static_cast<std::byte>(255);
+                buffer[base + 2] = static_cast<std::byte>(255);
+                buffer[base + 3]
+                    = static_cast<std::byte>(std::clamp((sim_value - prob_min) / prob_max, 0.0, 1.0) * 255);
+            }
         }
     });
     g_thread_pool.wait();
@@ -158,23 +191,24 @@ int main()
 {
     initLogger();
 
-    mve::Window window("Schrodinger Sim 3D", mve::Vector2i(600, 600), true);
+    const mve::Vector2i init_screen_size(800, 600);
+    mve::Window window("Schrodinger Sim 3D", init_screen_size, true);
     mve::Renderer renderer(window, "Schrodinger Sim 3D", 1, 0, 0);
 
     auto [vertex_layout, vertex_buffer, index_buffer] = create_sim_mesh_data(renderer);
     mve::Shader vert_shader("./res/bin/shader/cloud.vert.spv");
     mve::Shader frag_shader("./res/bin/shader/cloud.frag.spv");
     mve::GraphicsPipeline pipeline = renderer.create_graphics_pipeline(
-        vert_shader, frag_shader, vertex_layout, mve::CullMode::back, mve::DepthTest::on);
+        vert_shader, frag_shader, vertex_layout, mve::CullMode::front, mve::DepthTest::on);
 
     mve::DescriptorSet global_descriptor = pipeline.create_descriptor_set(vert_shader.descriptor_set(0));
     mve::UniformBuffer global_ubo = renderer.create_uniform_buffer(vert_shader.descriptor_set(0).binding(0));
     global_descriptor.write_binding(vert_shader.descriptor_set(0).binding(0), global_ubo);
-    mve::Matrix4 proj = mve::perspective(90.0f, 1.0f, 0.001f, 100.0f);
+    mve::Matrix4 proj = mve::perspective(90.0f, init_screen_size.aspect_ratio(), 0.001f, 100.0f);
     global_ubo.update(vert_shader.descriptor_set(0).binding(0).member("proj").location(), proj);
     const mve::UniformLocation shader_lighting_location
         = vert_shader.descriptor_set(0).binding(0).member("lighting").location();
-    bool shader_lighting = false;
+    bool shader_lighting = true;
     global_ubo.update(shader_lighting_location, shader_lighting);
 
     Camera camera;
@@ -195,16 +229,15 @@ int main()
 
     util::FixedLoop fixed_loop(60.0f);
 
+    auto sim_theme = SimDisplayTheme::probability;
+
     TextPipeline text_pipeline(renderer, 36);
     TextBuffer fps_text = text_pipeline.create_text_buffer("FPS:", { 0.0f, 0.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
     TextBuffer tick_text = text_pipeline.create_text_buffer("TPS: ", { 0.0f, 40.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
     TextBuffer lighting_text = text_pipeline.create_text_buffer(
-        // ReSharper disable once CppDFAConstantConditions
-        // ReSharper disable once CppDFAUnreachableCode
-        shader_lighting ? "[l] Lighting: on" : "[l] Lighting: off",
-        { 0.0f, 80.0f },
-        1.0f,
-        { 1.0f, 1.0f, 1.0f });
+        lighting_display_text(shader_lighting), { 0.0f, 80.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
+    TextBuffer theme_text
+        = text_pipeline.create_text_buffer(theme_display_text(sim_theme), { 0.0f, 120.0f }, 1.0f, { 1.0f, 1.0f, 1.0f });
 
     SimplePipeline simple_pipeline(renderer);
 
@@ -212,12 +245,11 @@ int main()
         renderer.resize(window);
         text_pipeline.resize();
         simple_pipeline.resize(new_size);
-        const mve::Matrix4 new_proj
-            = mve::perspective(90.0f, static_cast<float>(new_size.x) / static_cast<float>(new_size.y), 0.001f, 100.0f);
+        const mve::Matrix4 new_proj = mve::perspective(90.0f, new_size.aspect_ratio(), 0.001f, 100.0f);
         global_ubo.update(vert_shader.descriptor_set(0).binding(0).member("proj").location(), new_proj);
     });
     text_pipeline.resize();
-    simple_pipeline.resize({ 600, 600 });
+    simple_pipeline.resize(init_screen_size);
 
     BoundingBox bb = { { -0.5f, -0.5f, -0.5f }, { 0.5f, 0.5f, 0.5f } };
     WireBoxMesh box(
@@ -274,13 +306,24 @@ int main()
         if (window.is_key_pressed(mve::Key::l)) {
             if (shader_lighting) {
                 global_ubo.update(shader_lighting_location, 0);
-                lighting_text.update("[l] Lighting: off");
+                lighting_text.update(lighting_display_text(false));
                 shader_lighting = false;
             }
             else {
                 global_ubo.update(shader_lighting_location, 1);
-                lighting_text.update("[l] Lighting: on");
+                lighting_text.update(lighting_display_text(true));
                 shader_lighting = true;
+            }
+        }
+
+        if (window.is_key_pressed(mve::Key::t)) {
+            if (sim_theme == SimDisplayTheme::probability) {
+                theme_text.update(theme_display_text(SimDisplayTheme::components));
+                sim_theme = SimDisplayTheme::components;
+            }
+            else {
+                theme_text.update(theme_display_text(SimDisplayTheme::probability));
+                sim_theme = SimDisplayTheme::probability;
             }
         }
 
@@ -288,7 +331,7 @@ int main()
         fixed_loop.update(1, [&] { camera.fixed_update(window); });
 
         g_global_data.sim->lock_read();
-        fill_buffer_sim(*g_global_data.sim, buffer);
+        fill_buffer_sim(*g_global_data.sim, buffer, sim_theme);
         g_global_data.sim->unlock_read();
         texture.update(buffer.data());
 
@@ -310,6 +353,7 @@ int main()
         text_pipeline.draw(fps_text);
         text_pipeline.draw(tick_text);
         text_pipeline.draw(lighting_text);
+        text_pipeline.draw(theme_text);
 
         renderer.end_render_pass();
         renderer.end_frame(window);

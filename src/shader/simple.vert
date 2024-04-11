@@ -12,10 +12,10 @@ layout (set = 1, binding = 0) uniform ObjectUniform {
 layout (location = 0) in vec3 in_pos;
 layout (location = 1) in vec3 in_color;
 
-layout (location = 0) out vec3 frag_color;
+layout (location = 0) out vec3 out_color;
 
 void main() {
     gl_Position = global_ubo.proj * global_ubo.view * object_ubo.model * vec4(in_pos, 1.0);
 
-    frag_color = in_color;
+    out_color = in_color;
 }
