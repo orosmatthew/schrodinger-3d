@@ -43,7 +43,7 @@ void main() {
     float far = 0.0;
     compute_near_far(ray, near, far);
 
-    if (near < 0.0) near = 0.0;
+    near = max(0.0, near);
     ray.origin = ray.origin + near * ray.dir;
 
     vec3 inc = 1.0 / abs(ray.dir);
