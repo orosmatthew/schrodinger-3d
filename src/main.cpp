@@ -8,6 +8,7 @@
 
 #include "camera.hpp"
 #include "logger.hpp"
+#include "scenarios.hpp"
 #include "schrodinger_sim_3d.hpp"
 #include "simple_pipeline.hpp"
 #include "text_buffer.hpp"
@@ -136,44 +137,6 @@ static void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>&
     g_thread_pool.wait();
 }
 
-static void init_packet(SchrodingerSim3d& sim)
-{
-    sim.lock_write();
-    constexpr auto i = std::complex(0.0, 1.0);
-    for (int j = 0; j < sim.size() * sim.size() * sim.size(); ++j) {
-        constexpr auto a = 1.0;
-        constexpr auto x0 = 10;
-        constexpr auto y0 = 32;
-        constexpr auto z0 = 32;
-        constexpr auto sigma_x = 5.0;
-        constexpr auto sigma_y = 5.0;
-        constexpr auto sigma_z = 5.0;
-        constexpr auto mom_x = 2.0;
-        constexpr auto mom_y = 0.0;
-        constexpr auto mom_z = 0.0;
-        const auto [x, y, z] = sim.idx_to_pos(j);
-        const auto x_term = std::exp(-std::pow(x - x0, 2.0) / (2.0 * std::pow(sigma_x, 2.0)));
-        const auto y_term = std::exp(-std::pow(y - y0, 2.0) / (2.0 * std::pow(sigma_y, 2.0)));
-        const auto z_term = std::exp(-std::pow(z - z0, 2.0) / (2.0 * std::pow(sigma_z, 2.0)));
-        const auto pos = x_term * y_term * z_term;
-        const auto mom = std::exp(i * (mom_x * x + mom_y * y + mom_z * z));
-        sim.set_at({ x, y, z }, a * pos * mom);
-    }
-
-    // Wall
-    constexpr std::array slit_ys = { 32 - 3, 32 - 2, 32 + 2, 32 + 3 };
-    for (int y = 0; y < sim.size(); ++y) {
-        if (std::ranges::find(slit_ys, y) != slit_ys.end()) {
-            continue;
-        }
-        for (int z = 0; z < sim.size(); ++z) {
-            constexpr int wall_x = 40;
-            sim.set_fixed_at({ wall_x, y, z }, true);
-        }
-    }
-    sim.unlock_write();
-}
-
 static SimMeshData create_sim_mesh_data(mve::Renderer& renderer)
 {
     mve::VertexLayout vertex_layout;
@@ -262,7 +225,7 @@ int main()
     };
     g_global_data.sim = std::make_unique<SchrodingerSim3d>(sim_props);
 
-    init_packet(*g_global_data.sim);
+    scenario_simple_packet(*g_global_data.sim);
 
     std::vector<std::byte> buffer(sim_props.size * sim_props.size * sim_props.size * 4);
 
@@ -359,9 +322,13 @@ int main()
             g_global_data.should_exit = true;
         }
 
-        if (window.is_key_pressed(mve::Key::r)) {
+        if (window.is_key_pressed(mve::Key::one)) {
             g_global_data.sim->clear();
-            init_packet(*g_global_data.sim);
+            scenario_simple_packet(*g_global_data.sim);
+        }
+        else if (window.is_key_pressed(mve::Key::two)) {
+            g_global_data.sim->clear();
+            scenario_double_slit(*g_global_data.sim);
         }
 
         if (window.is_key_pressed(mve::Key::l)) {
