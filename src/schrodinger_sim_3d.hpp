@@ -73,6 +73,11 @@ public:
         return m_buffer_present[idx];
     }
 
+    [[nodiscard]] double potential_at_idx(const size_t idx) const
+    {
+        return m_buffer_potential[idx];
+    }
+
     [[nodiscard]] std::complex<double> value_at(const mve::Vector3i pos) const
     {
         return value_at_idx(pos_to_idx(pos));
@@ -106,6 +111,11 @@ public:
     [[nodiscard]] bool fixed_at_idx(const size_t idx) const
     {
         return m_buffer_fixed[idx];
+    }
+
+    void set_potential(const mve::Vector3i pos, const double value)
+    {
+        m_buffer_potential[pos_to_idx(pos)] = value;
     }
 
     void lock_read()

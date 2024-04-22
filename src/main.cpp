@@ -81,27 +81,42 @@ static std::string fullscreen_display_text(const bool fullscreen)
 
 static void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>& buffer, const SimDisplayTheme theme)
 {
-    double prob_min = std::numeric_limits<double>::max();
-    double prob_max = std::numeric_limits<double>::min();
-    for (BS::multi_future<std::pair<double, double>> extremes = g_thread_pool.submit_blocks(
+    struct Extremes {
+        double prob_min = std::numeric_limits<double>::max();
+        double prob_max = std::numeric_limits<double>::min();
+        double pot_min = std::numeric_limits<double>::max();
+        double pot_max = std::numeric_limits<double>::min();
+    };
+    Extremes extremes;
+    for (BS::multi_future<Extremes> extreme_futures = g_thread_pool.submit_blocks(
              0,
              sim.size() * sim.size() * sim.size(),
              [&sim](const int start, const int end) {
                  double block_min = std::numeric_limits<double>::max();
                  double block_max = std::numeric_limits<double>::min();
+                 double block_pot_min = std::numeric_limits<double>::max();
+                 double block_pot_max = std::numeric_limits<double>::min();
                  for (int i = start; i < end; ++i) {
                      const auto sim_value = sim.value_at_idx(i);
                      const auto abs = std::norm(sim_value);
                      block_min = std::min(abs, block_min);
                      block_max = std::max(abs, block_max);
+                     const double pot = sim.potential_at_idx(i);
+                     block_pot_min = std::min(pot, block_pot_min);
+                     block_pot_max = std::max(pot, block_pot_max);
                  }
-                 return std::pair(block_min, block_max);
+                 return Extremes {
+                     .prob_min = block_min, .prob_max = block_max, .pot_min = block_pot_min, .pot_max = block_pot_max
+                 };
              });
-         std::future<std::pair<double, double>> & future : extremes) {
-        auto [min, max] = future.get();
-        prob_min = std::min(min, prob_min);
-        prob_max = std::max(max, prob_max);
+         std::future<Extremes> & future : extreme_futures) {
+        auto [prob_min, prob_max, pot_min, pot_max] = future.get();
+        extremes.prob_min = std::min(extremes.prob_min, prob_min);
+        extremes.prob_max = std::max(extremes.prob_max, prob_max);
+        extremes.pot_min = std::min(extremes.pot_min, pot_min);
+        extremes.pot_max = std::max(extremes.pot_max, pot_max);
     }
+    const bool draw_potential = !(extremes.pot_min == 0 && extremes.pot_max == 0);
     g_thread_pool.detach_blocks(0, sim.size() * sim.size() * sim.size(), [&](const int start, const int end) {
         for (int i = start; i < end; ++i) {
             const int base = i * 4;
@@ -121,16 +136,25 @@ static void fill_buffer_sim(const SchrodingerSim3d& sim, std::vector<std::byte>&
                 buffer[base] = static_cast<std::byte>(std::clamp((real - comp_min) / comp_max, 0.0, 1.0) * 255);
                 buffer[base + 1] = static_cast<std::byte>(std::clamp((imag - comp_min) / comp_max, 0.0, 1.0) * 255);
                 buffer[base + 2] = static_cast<std::byte>(0);
-                buffer[base + 3]
-                    = static_cast<std::byte>(std::clamp((std::norm(sim_value) - prob_min) / prob_max, 0.0, 1.0) * 255);
+                buffer[base + 3] = static_cast<std::byte>(
+                    std::clamp((std::norm(sim_value) - extremes.prob_min) / extremes.prob_max, 0.0, 1.0) * 255);
             }
             else {
                 const double sim_value = std::norm(sim.value_at_idx(i));
                 buffer[base] = static_cast<std::byte>(255);
                 buffer[base + 1] = static_cast<std::byte>(255);
                 buffer[base + 2] = static_cast<std::byte>(255);
-                buffer[base + 3]
-                    = static_cast<std::byte>(std::clamp((sim_value - prob_min) / prob_max, 0.0, 1.0) * 255);
+                buffer[base + 3] = static_cast<std::byte>(
+                    std::clamp((sim_value - extremes.prob_min) / extremes.prob_max, 0.0, 1.0) * 255);
+            }
+            if (draw_potential) {
+                if (const auto pot = sim.potential_at_idx(i); pot != 0) {
+                    buffer[base] = static_cast<std::byte>(255);
+                    buffer[base + 1] = static_cast<std::byte>(0);
+                    buffer[base + 2] = static_cast<std::byte>(255);
+                    buffer[base + 3] = static_cast<std::byte>(
+                        std::clamp((pot - extremes.pot_min) / extremes.pot_max, 0.0, 1.0) * 255);
+                }
             }
         }
     });
@@ -329,6 +353,14 @@ int main()
         else if (window.is_key_pressed(mve::Key::two)) {
             g_global_data.sim->clear();
             scenario_double_slit(*g_global_data.sim);
+        }
+        else if (window.is_key_pressed(mve::Key::three)) {
+            g_global_data.sim->clear();
+            scenario_double_slit_potential(*g_global_data.sim);
+        }
+        else if (window.is_key_pressed(mve::Key::four)) {
+            g_global_data.sim->clear();
+            scenario_wall_potential(*g_global_data.sim);
         }
 
         if (window.is_key_pressed(mve::Key::l)) {
