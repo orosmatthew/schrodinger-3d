@@ -24,12 +24,15 @@ struct SimMeshData {
 
 struct GlobalData {
     std::thread sim_thread;
+    std::atomic<bool> paused = false;
     std::atomic<bool> should_exit = false;
     std::unique_ptr<SchrodingerSim3d> sim;
     std::atomic<int> sim_frame_count = 0;
 };
 
 enum class SimDisplayTheme { probability, components };
+
+enum class Scenario { simple_packet, double_slit, double_slit_potential, wall_potential, moving_sphere_potential };
 
 static BS::thread_pool g_thread_pool;
 static GlobalData g_global_data;
@@ -213,8 +216,13 @@ static SimMeshData create_sim_mesh_data(mve::Renderer& renderer)
 static void sim_thread_process()
 {
     while (!g_global_data.should_exit) {
-        g_global_data.sim->update();
-        ++g_global_data.sim_frame_count;
+        if (g_global_data.paused) {
+            std::this_thread::yield();
+        }
+        else {
+            g_global_data.sim->update();
+            ++g_global_data.sim_frame_count;
+        }
     }
 }
 
@@ -308,6 +316,12 @@ int main()
 
     g_global_data.sim_thread = std::thread(sim_thread_process);
 
+    auto scenario = Scenario::simple_packet;
+
+    float half_sim_size = static_cast<float>(g_global_data.sim->size()) / 2.0f;
+    float third_sim_size = static_cast<float>(g_global_data.sim->size()) / 3.0f;
+    mve::Vector3 moving_sphere_center;
+
     window.disable_cursor();
     int current_frame_count = 0;
     int frame_count;
@@ -317,6 +331,10 @@ int main()
             g_global_data.should_exit = true;
         }
         window.poll_events();
+
+        if (window.is_key_pressed(mve::Key::p)) {
+            g_global_data.paused = !g_global_data.paused;
+        }
 
         if (window.is_key_pressed(mve::Key::f)) {
             if (window.is_fullscreen()) {
@@ -349,18 +367,56 @@ int main()
         if (window.is_key_pressed(mve::Key::one)) {
             g_global_data.sim->clear();
             scenario_simple_packet(*g_global_data.sim);
+            scenario = Scenario::simple_packet;
         }
         else if (window.is_key_pressed(mve::Key::two)) {
             g_global_data.sim->clear();
+            scenario_simple_packet(*g_global_data.sim);
             scenario_double_slit(*g_global_data.sim);
+            scenario = Scenario::double_slit;
         }
         else if (window.is_key_pressed(mve::Key::three)) {
             g_global_data.sim->clear();
+            scenario_simple_packet(*g_global_data.sim);
             scenario_double_slit_potential(*g_global_data.sim);
+            scenario = Scenario::double_slit_potential;
         }
         else if (window.is_key_pressed(mve::Key::four)) {
             g_global_data.sim->clear();
+            scenario_simple_packet(*g_global_data.sim);
             scenario_wall_potential(*g_global_data.sim);
+            scenario = Scenario::wall_potential;
+        }
+        else if (window.is_key_pressed(mve::Key::five)) {
+            g_global_data.sim->clear();
+            scenario_simple_packet(*g_global_data.sim);
+            moving_sphere_center
+                = { static_cast<float>(g_global_data.sim->size()) - third_sim_size, half_sim_size, half_sim_size };
+            scenario_moving_sphere_potential(*g_global_data.sim, moving_sphere_center);
+            scenario = Scenario::moving_sphere_potential;
+        }
+
+        if (scenario == Scenario::moving_sphere_potential) {
+            constexpr float sphere_speed = 0.1f;
+            if (window.is_key_down(mve::Key::numpad_8)) {
+                moving_sphere_center.z += sphere_speed;
+            }
+            else if (window.is_key_down(mve::Key::numpad_5)) {
+                moving_sphere_center.z -= sphere_speed;
+            }
+            if (window.is_key_down(mve::Key::numpad_4)) {
+                moving_sphere_center.y += sphere_speed;
+            }
+            else if (window.is_key_down(mve::Key::numpad_6)) {
+                moving_sphere_center.y -= sphere_speed;
+            }
+            if (window.is_key_down(mve::Key::numpad_7)) {
+                moving_sphere_center.x += sphere_speed;
+            }
+            else if (window.is_key_down(mve::Key::numpad_9)) {
+                moving_sphere_center.x -= sphere_speed;
+            }
+            scenario_moving_sphere_potential(*g_global_data.sim, moving_sphere_center);
         }
 
         if (window.is_key_pressed(mve::Key::l)) {
